@@ -26,6 +26,7 @@ require_once __DIR__.'/Numbering.php';
 require_once __DIR__.'/Mail.php';
 require_once __DIR__.'/Notifications.php';
 require_once __DIR__.'/SmtpSettings.php';
+require_once __DIR__.'/DocumentLookup.php';
 
 final class PortalApp
 {
@@ -195,7 +196,7 @@ final class PortalApp
         // Visitantes: sin los usuarios del personal que crearon o editaron cada registro (son nombres de acceso).
         if(!$user)$data=self::withoutStaffStamps($data);
         if($user&&$user['rol']==='admin'){$data['auditoria']=[...PortalAudit::rows($this),...PortalAudit::legacy($this,$full)];$data['academico']['bitacora']=array_map(fn($r)=>['id'=>$r['id'],'f'=>$r['fecha'],'u'=>$r['usuario'],'a'=>$r['accion'],'m'=>$r['entidad'],'d'=>$r['registro'].' · '.$r['detalle']],PortalAudit::rows($this));}
-        return ['data'=>$data,'revision'=>(int)$state['revision'],'user'=>$user,'csrf'=>$_SESSION['csrf'],'numberingYear'=>(int)date('Y'),'schema_version'=>PortalSchema::VERSION,'roles'=>PortalPolicy::definitions()['roles']];
+        return ['data'=>$data,'revision'=>(int)$state['revision'],'user'=>$user,'csrf'=>$_SESSION['csrf'],'numberingYear'=>(int)date('Y'),'schema_version'=>PortalSchema::VERSION,'roles'=>PortalPolicy::definitions()['roles'],'documentLookup'=>$this->documentLookupEnabled()];
     }
     public function input(): array
     {
@@ -629,6 +630,51 @@ final class PortalApp
             // El primer intento SMTP se hace después de responder; si falla, el cron reintenta desde la cola.
             portal_defer(fn()=>$this->processMail(3,$mailId));
         }
+        return $result;
+    }
+
+    private function documentLookupSettings(): PortalDocumentLookupSettings
+    {return new PortalDocumentLookupSettings($this->config,$this->configFile);}
+
+    private function documentLookup(?array $settings=null): PortalDocumentLookup
+    {return new PortalDocumentLookup($settings??$this->documentLookupSettings()->read());}
+
+    /** Si la configuración protegida no se puede leer, el portal sigue funcionando sin autocompletado. */
+    private function documentLookupEnabled(): bool
+    {try{return $this->documentLookup()->enabled();}catch(PortalError){return false;}}
+
+    /** Autocompleta nombres (DNI) o razón social (RUC) en Mesa de Partes y Libro de Reclamaciones. */
+    public function identity(array $input): array
+    {
+        $input=self::validate($input,['tipoDoc'=>'required|string|max:10','numDoc'=>'required|string|max:12']);
+        $settings=$this->documentLookupSettings()->read();$service=$this->documentLookup($settings);
+        if(!$service->enabled())throw new PortalError(503,'La consulta automática de documentos no está habilitada.');
+        // Límite por IP configurable: evita usar el formulario para recorrer el padrón.
+        $this->rate('identity',(int)$settings['per_minute'],60);$this->rate('identity-hour',(int)$settings['per_hour'],3600);
+        return ['record'=>$service->find($input['tipoDoc'],$input['numDoc'])];
+    }
+
+    public function documentLookupForm(): array
+    {$this->requireAdmin();return $this->documentLookupSettings()->view();}
+
+    public function saveDocumentLookup(array $input): array
+    {
+        $this->requireAdmin();$this->rate('identity-settings',20,60);
+        $result=$this->documentLookupSettings()->save($input);
+        PortalAudit::write($this,'Configurar API de documentos','Configuración','DNI/RUC',['proveedor'=>$result['provider'],'estado'=>$result['enabled']?'Habilitada':'Deshabilitada']);
+        return $result;
+    }
+
+    /** Prueba la configuración guardada con un DNI o RUC elegido por el administrador, aunque esté deshabilitada. */
+    public function testDocumentLookup(array $input): array
+    {
+        $this->requireAdmin();$this->rate('identity-test',10,300);
+        $input=self::validate($input,['tipoDoc'=>'required|string|max:10','numDoc'=>'required|string|max:12']);
+        $settings=$this->documentLookupSettings()->read();
+        if(trim((string)$settings['token'])==='')throw new PortalError(422,'Guarda primero un token para probar la API.');
+        try{$record=$this->documentLookup([...$settings,'enabled'=>true])->find($input['tipoDoc'],$input['numDoc']);$result=['ok'=>true,'record'=>$record,'message'=>'La API respondió correctamente.'];}
+        catch(PortalError $error){if($error->status===422)throw $error;$result=['ok'=>false,'message'=>$error->getMessage()];}
+        PortalAudit::write($this,'Probar API de documentos','Configuración','DNI/RUC',['tipo'=>strtoupper($input['tipoDoc']),'resultado'=>$result['ok']?'Correcto':'Error']);
         return $result;
     }
 

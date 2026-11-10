@@ -10,3 +10,4 @@
 !/public_html/assets/cache/.htaccess
 /portal-private/.smtp-settings.json
 /portal-private/.smtp-*
+/portal-private/.document-lookup*

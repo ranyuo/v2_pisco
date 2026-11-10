@@ -26,6 +26,7 @@
 <script defer src="<?= portal_asset('/portal-server.js') ?>"></script>
 <script defer src="<?= portal_asset('/academic-documents.js') ?>"></script>
 <script defer src="<?= portal_asset('/bolsa-perfiles.js') ?>"></script>
+<script defer src="<?= portal_asset('/document-lookup.js') ?>"></script>
 <script defer src="<?= portal_asset('/standalone-services.js') ?>"></script>
 <script defer src="<?= portal_asset('/mail-settings.js') ?>"></script>
 </body>
