@@ -22,7 +22,11 @@ final class PortalContent
             $parts=array_values(array_filter(array_map('trim',explode(',',(string)($data['config']['inst']['direccion']??''))),'strlen'));
             $data['config']['inst']['region']=count($parts)>=2?$parts[count($parts)-1]:'';
             $data['config']['inst']['distrito']=count($parts)>=3?$parts[count($parts)-2]:'';
+            // «…, Pisco - Ica»: la última parte trae distrito y región separados por un guion.
+            if(count($parts)>=1&&preg_match('/^(.+?)\s+[-–]\s+(.+)$/u',$parts[count($parts)-1],$m)){$data['config']['inst']['distrito']=$m[1];$data['config']['inst']['region']=$m[2];}
         }
+        // Recomendaciones de docentes de la Bolsa Laboral: colección nueva que las bases anteriores no tienen.
+        if(isset($data['academico'])&&is_array($data['academico'])&&!isset($data['academico']['recomendaciones']))$data['academico']['recomendaciones']=[];
         // «Impacto institucional» era Impacto con los colores del portal; desde que todas las estructuras usan esos colores es la misma.
         if(($data['config']['diseno']??null)==='impacto-flv')$data['config']['diseno']='impacto';
         if(isset($data['config']['disenoColores']['impacto-flv'])&&is_array($data['config']['disenoColores'])){

@@ -21,9 +21,9 @@ bash tests/run.sh
 PORTAL_TEST_PHP_VERSION=8.1 bash tests/run.sh
 ```
 
-Necesita Docker, OpenSSL y Python 3. Crea una red privada, MariaDB y un receptor SMTP de pruebas con STARTTLS y una CA temporal; no publica puertos ni envía correo externo. Ejecuta las suites de estabilidad, correo y volumen, cada una en bases vacías propias. Elimina los contenedores, bases, red y certificados de esa ejecución al terminar. Conserva la imagen PHP para reutilizarla.
+Necesita Docker, OpenSSL y Python 3. Crea una red privada, MariaDB y un receptor SMTP de pruebas con STARTTLS y una CA temporal; no publica puertos ni envía correo externo. Ejecuta las suites de estabilidad, correo, volumen y Bolsa Laboral, cada una en bases vacías propias. Elimina los contenedores, bases, red y certificados de esa ejecución al terminar. Conserva la imagen PHP para reutilizarla.
 
-La suite de estabilidad comprueba también permisos revocados, identidades y formas de datos inválidas, documentos emitidos y respaldos programados. Correo verifica entrega y rechazo SMTP, reintentos, cancelación, cifrado y errores sin secretos. Volumen utiliza 401 alumnos y 2502 notas; sus tiempos son observaciones locales, no un benchmark del hosting.
+La suite de estabilidad comprueba también permisos revocados, identidades y formas de datos inválidas, documentos emitidos y respaldos programados. Correo verifica entrega y rechazo SMTP, reintentos, cancelación, cifrado y errores sin secretos. Bolsa Laboral (`bolsa-laboral.php`) verifica el ingreso por perfil, las recomendaciones de docentes con sus permisos y la privacidad entre empresas, y la validación del diseño de la página pública. Volumen utiliza 401 alumnos y 2502 notas; sus tiempos son observaciones locales, no un benchmark del hosting.
 
 El flujo `.github/workflows/qa.yml` ejecuta estas pruebas con PHP 8.1 y 8.3 en cada push y pull request.
 

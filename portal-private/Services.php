@@ -30,6 +30,19 @@ final class PortalServices
         foreach(['mensajes','reclamos','expedientes'] as $collection)if($user['rol']!=='admin')foreach($old[$collection] as $r)if(!PortalPolicy::find($new[$collection],'id',$r['id']))throw new PortalError(403,'No puedes eliminar registros originales.');
         foreach(['inst','redes','seo','whatsapp','limites','mpv','lr','bolsa','contadores'] as $key)if(isset($old['config'][$key])&&(!isset($new['config'][$key])||!is_array($new['config'][$key])))throw new PortalError(422,'Configuración incompleta: '.$key.'.');
         foreach([[$new['config']['lr']['correo']??'','Reclamos'],[$new['config']['correoReclamos']??'','Reclamos'],[$new['config']['bolsa']['correo']??'','Bolsa Laboral']] as [$email,$label])if(!is_string($email)||($email!==''&&(strlen($email)>254||!filter_var($email,FILTER_VALIDATE_EMAIL))))throw new PortalError(422,'Correo receptor no válido: '.$label.'.');
+        // Bolsa Laboral: diseño de la página pública («actual» o «perfiles», con cuatro tarjetas de ingreso) y sus fotos.
+        $bolsa=$new['config']['bolsa']??[];
+        if(!PortalPolicy::equal($old['config']['bolsa']??null,$bolsa)){
+            if(isset($bolsa['diseno'])&&!in_array($bolsa['diseno'],['actual','perfiles'],true))throw new PortalError(422,'Diseño de la Bolsa Laboral no válido.');
+            if(isset($bolsa['titulo'])&&(!is_string($bolsa['titulo'])||preg_match_all('/./us',$bolsa['titulo'])>120))throw new PortalError(422,'El título de la Bolsa Laboral admite hasta 120 caracteres.');
+            if(isset($bolsa['perfiles'])){
+                if(!is_array($bolsa['perfiles'])||array_diff(array_keys($bolsa['perfiles']),['estudiante','docente','administrador','empresa']))throw new PortalError(422,'Perfiles de la Bolsa Laboral no válidos.');
+                foreach($bolsa['perfiles'] as $card){
+                    if(!is_array($card)||array_diff(array_keys($card),['img']))throw new PortalError(422,'Tarjeta de perfil no válida.');
+                    $image=$card['img']??'';if(!PortalRules::safeImage($image)||strlen($image)>3*1024*1024)throw new PortalError(422,'La foto de la tarjeta no es válida o supera el tamaño permitido.');
+                }
+            }
+        }
         PortalNumbering::validate($old,$new);
         if(!PortalPolicy::equal($old['config']['mpv'],$new['config']['mpv'])){
             $email=$new['config']['mpv']['correo']??null;
