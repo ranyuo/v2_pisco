@@ -144,7 +144,8 @@
       "mods": [
         "dashboard",
         "ix-horarios",
-        "cvdocente"
+        "cvdocente",
+        "ix-bolsa"
       ],
       "community": true
     },

@@ -37,7 +37,7 @@ for attempt in range(30):
  except OSError:
   if attempt==29:raise
   time.sleep(1)'
-for suite in stability mail load; do
+for suite in stability mail load bolsa; do
  qa_db="${suite}_test"
  d exec "$qa_id-db" mariadb -uroot -e "CREATE DATABASE $qa_db; CREATE DATABASE ${suite}_restore_test;"
  qa_key="$(openssl rand -hex 32)"
@@ -45,6 +45,6 @@ for suite in stability mail load; do
 <?php return ['db_host'=>'qa-db','db_port'=>3306,'db_name'=>'$qa_db','db_user'=>'root','db_password'=>'','install_key'=>'$qa_key','secure_cookies'=>false,'timezone'=>'America/Lima','smtp'=>['enabled'=>false]];
 PHP
  chmod 600 "$qa_dir/config.php"
- case "$suite" in stability) qa_test=stability.php;; mail) qa_test=mail-regressions.php;; load) qa_test=load-smoke.php;; esac
+ case "$suite" in stability) qa_test=stability.php;; mail) qa_test=mail-regressions.php;; load) qa_test=load-smoke.php;; bolsa) qa_test=bolsa-laboral.php;; esac
  d run --rm --network "$qa_id" -v "$qa_root:/app" -v "$qa_dir:/qa:ro" -e PORTAL_TEST_CONFIG_FILE=/qa/config.php -e PORTAL_SMTP_TEST_HOST=qa-smtp -e PORTAL_SMTP_TEST_CA=/qa/ca.pem "pisco-qa-php:$qa_php" php "tests/$qa_test"
 done

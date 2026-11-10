@@ -300,8 +300,14 @@ final class PortalApp
         }
     }
 
+    /** Perfiles de ingreso de la portada de la Bolsa Laboral: cada tarjeta admite solo sus tipos de cuenta. */
+    public const LOGIN_PROFILES=['estudiante'=>['estudiante','egresado'],'docente'=>['docente'],'empresa'=>['empresa'],'administrador'=>null];
+    private const LOGIN_PROFILE_LABELS=['estudiante'=>'Estudiante/Egresado','docente'=>'Docente','empresa'=>'Empresa','administrador'=>'Administrador'];
+
     public function login(array $input): array
     {
+        $profile=$input['perfil']??null;
+        if($profile!==null&&(!is_string($profile)||!array_key_exists($profile,self::LOGIN_PROFILES)))throw new PortalError(422,'Perfil de ingreso no válido.');
         $input=self::validate($input,['username'=>'required|string|max:80','password'=>'required|string|max:72']);$username=strtolower(trim($input['username']));
         $this->rate('login',60,60);
         $db=$this->db();$db->beginTransaction();
@@ -319,6 +325,11 @@ final class PortalApp
                     $fails->execute([$failKey,time()]);$locked=(int)$fails->fetchColumn()>=5;}
                 PortalAudit::write($this,'Intento de acceso fallido','Cuentas',$username,['bloqueada'=>isset($locked)&&$locked?'sí':'no'],['usuario'=>'visitante','rol'=>'publico']);
                 $db->commit();throw new PortalError(422,'Usuario o contraseña incorrectos.');
+            }
+            if($profile!==null){
+                // «Administrador» agrupa al personal (cuentas que no son de la comunidad educativa ni de empresas).
+                $roles=self::LOGIN_PROFILES[$profile]??array_values(array_diff(array_keys(PortalPolicy::definitions()['roles']),PortalPolicy::COMMUNITY));
+                if(!in_array($row['role'],$roles,true)){$db->commit();throw new PortalError(403,'Esta cuenta no corresponde al ingreso «'.self::LOGIN_PROFILE_LABELS[$profile].'». Ingresa desde la tarjeta de tu perfil.');}
             }
             if(password_needs_rehash($row['password'],PASSWORD_DEFAULT))$db->prepare('UPDATE pisco_users SET password=? WHERE id=?')->execute([password_hash($input['password'],PASSWORD_DEFAULT),$row['id']]);
             $db->prepare('UPDATE pisco_users SET login_failures=0,locked_until=NULL,last_login=? WHERE id=?')->execute([date('Y-m-d H:i:s'),$row['id']]);$db->prepare('DELETE FROM pisco_rate_limits WHERE rate_key=?')->execute([$failKey]);$db->commit();

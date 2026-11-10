@@ -307,7 +307,23 @@
         "Actividad económica lícita y vinculada a los programas de estudio del instituto.",
         "Las convocatorias deben indicar puesto, requisitos, modalidad y fecha límite; no se aceptan cobros a postulantes.",
         "Plazo de evaluación: hasta 3 días hábiles desde el registro."
-      ]
+      ],
+      "diseno": "actual",
+      "titulo": "Bienvenido a la Bolsa Laboral",
+      "perfiles": {
+        "estudiante": {
+          "img": "/assets/pisco/61bb9596fb5d64aed927.jpg"
+        },
+        "docente": {
+          "img": "/assets/pisco/de34463342d2487ca974.jpg"
+        },
+        "administrador": {
+          "img": "/assets/pisco/00a26292e570a9145c29.jpg"
+        },
+        "empresa": {
+          "img": ""
+        }
+      }
     },
     "temas": {
       "pisco": {
@@ -7201,7 +7217,8 @@
       "enf": 6,
       "pa": 8,
       "ashr": 9
-    }
+    },
+    "recomendaciones": []
   },
   "correos": [],
   "suscriptores": []

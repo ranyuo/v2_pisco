@@ -511,7 +511,7 @@ const ROLES = {
   transparencia: { label: 'Transparencia / administración', mods: ['dashboard', 'documentos', 'tupa', 'inversiones', 'licenciamiento', 'convocatorias', 'servicios'], publish: true },
   atencion: { label: 'Atención al ciudadano', mods: ['dashboard', 'mensajes', 'reclamos', 'expedientes', 'ix-bolsa'], publish: false, viewDni: true },
   directivo: { label: 'Directivo', mods: ['dashboard', 'estadisticas', 'reclamos', 'expedientes', 'ix-alumnos', 'ix-horarios', 'ix-certificados', 'ix-titulos', 'ix-bolsa'], publish: false, viewDni: true },
-  docente: { label: 'Docente', mods: ['dashboard', 'ix-horarios'], community: true },
+  docente: { label: 'Docente', mods: ['dashboard', 'ix-horarios', 'ix-bolsa'], community: true },
   estudiante: { label: 'Estudiante', mods: ['dashboard', 'ix-horarios', 'ix-certificados', 'ix-bolsa'], community: true },
   egresado: { label: 'Egresado', mods: ['dashboard', 'ix-certificados', 'ix-titulos', 'ix-bolsa'], community: true },
   empresa: { label: 'Empresa', mods: ['dashboard', 'ix-bolsa'], community: true },
