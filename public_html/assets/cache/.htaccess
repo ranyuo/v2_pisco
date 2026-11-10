@@ -1,0 +1,5 @@
+# Imágenes con nombre por hash de contenido (generadas por el portal): caché de un año.
+<IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=31536000, immutable"
+</IfModule>
+Options -Indexes

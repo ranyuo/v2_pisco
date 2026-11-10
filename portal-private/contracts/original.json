@@ -1,0 +1,1867 @@
+{
+  "roles": {
+    "admin": {
+      "label": "Administrador",
+      "mods": [
+        "dashboard",
+        "aprobaciones",
+        "paginas",
+        "jerarquica",
+        "docentes",
+        "programas",
+        "egresados",
+        "admision",
+        "matricula",
+        "becas",
+        "documentos",
+        "tupa",
+        "estadisticas",
+        "licenciamiento",
+        "inversiones",
+        "convocatorias",
+        "noticias",
+        "eventos",
+        "portada",
+        "mensajes",
+        "reclamos",
+        "expedientes",
+        "certificados",
+        "enlaces",
+        "locales",
+        "servicios",
+        "config",
+        "ix-alumnos",
+        "ix-horarios",
+        "ix-certificados",
+        "ix-titulos",
+        "ix-bolsa",
+        "ix-config",
+        "temas",
+        "usuarios",
+        "auditoria",
+        "respaldo",
+        "cvdocente"
+      ],
+      "publish": true,
+      "approve": true,
+      "hardDelete": true,
+      "viewDni": true,
+      "closePeriod": true
+    },
+    "imagen": {
+      "label": "Imagen institucional",
+      "mods": [
+        "dashboard",
+        "noticias",
+        "eventos",
+        "portada",
+        "paginas",
+        "enlaces",
+        "locales",
+        "temas"
+      ],
+      "publish": true
+    },
+    "secretaria": {
+      "label": "Secretaría académica",
+      "mods": [
+        "dashboard",
+        "admision",
+        "matricula",
+        "becas",
+        "estadisticas",
+        "docentes",
+        "jerarquica",
+        "certificados",
+        "egresados",
+        "ix-alumnos",
+        "ix-horarios",
+        "ix-certificados",
+        "ix-titulos",
+        "cvdocente",
+        "ix-config"
+      ],
+      "publish": true,
+      "viewDni": true
+    },
+    "coordinador": {
+      "label": "Coordinador de programa",
+      "mods": [
+        "dashboard",
+        "programas",
+        "egresados",
+        "ix-alumnos",
+        "ix-horarios",
+        "ix-config"
+      ],
+      "publish": true,
+      "ownProgram": true
+    },
+    "transparencia": {
+      "label": "Transparencia / administración",
+      "mods": [
+        "dashboard",
+        "documentos",
+        "tupa",
+        "inversiones",
+        "licenciamiento",
+        "convocatorias",
+        "servicios"
+      ],
+      "publish": true
+    },
+    "atencion": {
+      "label": "Atención al ciudadano",
+      "mods": [
+        "dashboard",
+        "mensajes",
+        "reclamos",
+        "expedientes",
+        "ix-bolsa"
+      ],
+      "publish": false,
+      "viewDni": true
+    },
+    "directivo": {
+      "label": "Directivo",
+      "mods": [
+        "dashboard",
+        "estadisticas",
+        "reclamos",
+        "expedientes",
+        "ix-alumnos",
+        "ix-horarios",
+        "ix-certificados",
+        "ix-titulos",
+        "ix-bolsa",
+        "ix-config"
+      ],
+      "publish": false,
+      "viewDni": true
+    },
+    "docente": {
+      "label": "Docente",
+      "mods": [
+        "dashboard",
+        "ix-horarios",
+        "cvdocente"
+      ],
+      "community": true
+    },
+    "estudiante": {
+      "label": "Estudiante",
+      "mods": [
+        "dashboard",
+        "ix-horarios",
+        "ix-certificados",
+        "ix-bolsa"
+      ],
+      "community": true
+    },
+    "egresado": {
+      "label": "Egresado",
+      "mods": [
+        "dashboard",
+        "ix-certificados",
+        "ix-titulos",
+        "ix-bolsa"
+      ],
+      "community": true
+    },
+    "empresa": {
+      "label": "Empresa",
+      "mods": [
+        "dashboard",
+        "ix-bolsa"
+      ],
+      "community": true
+    }
+  },
+  "modules": {
+    "dashboard": "Inicio",
+    "aprobaciones": "Aprobaciones",
+    "paginas": "Páginas institucionales",
+    "jerarquica": "Plana jerárquica",
+    "docentes": "Plana docente",
+    "programas": "Programas de estudio",
+    "egresados": "Egresados destacados",
+    "admision": "Admisión",
+    "matricula": "Matrícula",
+    "becas": "Becas",
+    "documentos": "Documentos de gestión",
+    "tupa": "TUPA",
+    "estadisticas": "Estadísticas",
+    "licenciamiento": "Licenciamiento",
+    "inversiones": "Inversiones",
+    "convocatorias": "Convocatorias",
+    "noticias": "Noticias",
+    "eventos": "Eventos",
+    "portada": "Portada",
+    "mensajes": "Mensajes de contacto",
+    "reclamos": "Libro de reclamaciones",
+    "expedientes": "Mesa de partes",
+    "certificados": "Verificación de documentos",
+    "enlaces": "Enlaces y servicios",
+    "locales": "Campus y locales",
+    "servicios": "Servicios complementarios",
+    "config": "Configuración",
+    "ix-alumnos": "Maestro de alumnos",
+    "ix-horarios": "Programación de horarios",
+    "ix-certificados": "Certificación modular",
+    "ix-titulos": "Grados y títulos",
+    "ix-bolsa": "Bolsa laboral",
+    "ix-config": "Configuración académica",
+    "temas": "Temas y apariencia",
+    "usuarios": "Usuarios y roles",
+    "auditoria": "Auditoría",
+    "respaldo": "Copias de seguridad",
+    "cvdocente": "CV Docente"
+  },
+  "routes": [
+    "",
+    "nosotros",
+    "nosotros/presentacion",
+    "nosotros/resena-historica",
+    "nosotros/mision-vision",
+    "nosotros/organizacion",
+    "nosotros/reconocimientos",
+    "nosotros/plana-jerarquica",
+    "nosotros/plana-docente",
+    "nosotros/campus-e-informes",
+    "programas",
+    "programas/:slug",
+    "admision",
+    "matricula",
+    "becas",
+    "transparencia",
+    "transparencia/documentos-gestion",
+    "transparencia/inversiones",
+    "libro-de-reclamaciones",
+    "transparencia/libro-de-reclamaciones",
+    "transparencia/licenciamiento",
+    "transparencia/tupa",
+    "transparencia/estadisticas",
+    "transparencia/convocatorias",
+    "servicios",
+    "servicios/complementarios",
+    "servicios/mesa-de-partes",
+    "servicios/consulta-certificados",
+    "servicios/bolsa-laboral",
+    "noticias",
+    "noticias/:slug",
+    "eventos",
+    "contacto",
+    "politica-de-privacidad",
+    "terminos-de-uso",
+    "preguntas-frecuentes",
+    "mapa-del-sitio",
+    "buscar",
+    "servicios/libro-de-reclamaciones"
+  ],
+  "specs": {
+    "noticias": {
+      "collection": "noticias",
+      "module": "noticias",
+      "states": [
+        "Borrador",
+        "Publicada",
+        "Despublicada",
+        "Archivada"
+      ],
+      "pubState": "Publicada",
+      "fields": [
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": true,
+          "max": 160
+        },
+        {
+          "name": "resumen",
+          "type": "textarea",
+          "required": false,
+          "publishRequired": true,
+          "unique": false,
+          "max": 300
+        },
+        {
+          "name": "contenido",
+          "type": "rich",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "imagen",
+          "type": "image",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "foto2",
+          "type": "image",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "foto3",
+          "type": "image",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "foto4",
+          "type": "image",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "foto5",
+          "type": "image",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "video",
+          "type": "url",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "adjuntos",
+          "type": "rows",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "categoriaId",
+          "type": "select",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "fecha",
+          "type": "datetime-local",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "destacada",
+          "type": "checkbox",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": true
+        }
+      ]
+    },
+    "catnoticias": {
+      "collection": "categoriasNoticia",
+      "module": "noticias",
+      "states": [
+        "Activo",
+        "Inactivo"
+      ],
+      "pubState": "Activo",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": true
+        }
+      ]
+    },
+    "eventos": {
+      "collection": "eventos",
+      "module": "eventos",
+      "states": [
+        "Borrador",
+        "Publicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "fecha",
+          "type": "datetime-local",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "lugar",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "descripcion",
+          "type": "textarea",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        }
+      ]
+    },
+    "inversiones": {
+      "collection": "inversiones",
+      "module": "inversiones",
+      "states": [
+        "Borrador",
+        "Publicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "fuente",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "monto",
+          "type": "number",
+          "required": true,
+          "publishRequired": false,
+          "unique": false,
+          "min": 0
+        },
+        {
+          "name": "fecha",
+          "type": "date",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "estadoAvance",
+          "type": "text",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "descripcion",
+          "type": "textarea",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "imagen",
+          "type": "image",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "documento",
+          "type": "file",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "convocatorias": {
+      "collection": "convocatorias",
+      "module": "convocatorias",
+      "states": [
+        "Borrador",
+        "Publicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "fecha",
+          "type": "date",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "situacion",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "descripcion",
+          "type": "textarea",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "bases",
+          "type": "file",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "etapas",
+          "type": "rows",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "documentos": {
+      "collection": "documentos",
+      "module": "documentos",
+      "states": [
+        "Borrador",
+        "Publicado",
+        "Histórico"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "tipoId",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "vigencia",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "version",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "required": false,
+          "publishRequired": false,
+          "unique": false,
+          "min": 1
+        },
+        {
+          "name": "descripcion",
+          "type": "textarea",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "refModulo",
+          "type": "select",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "archivo",
+          "type": "file",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        }
+      ]
+    },
+    "tiposdoc": {
+      "collection": "tiposDocumento",
+      "module": "documentos",
+      "states": [
+        "Activo",
+        "Inactivo"
+      ],
+      "pubState": "Activo",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": true
+        }
+      ]
+    },
+    "tupa": {
+      "collection": "tupa",
+      "module": "tupa",
+      "states": [
+        "Borrador",
+        "Publicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "anio",
+          "type": "number",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "codigo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "categoria",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "monto",
+          "type": "number",
+          "required": true,
+          "publishRequired": false,
+          "unique": false,
+          "min": 0
+        },
+        {
+          "name": "denominacion",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "cuenta",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "requisitos",
+          "type": "textarea",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "jerarquica": {
+      "collection": "jerarquica",
+      "module": "jerarquica",
+      "states": [
+        "Publicado",
+        "Despublicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "personaId",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "cargo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "unidad",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "required": true,
+          "publishRequired": false,
+          "unique": false,
+          "min": 1
+        },
+        {
+          "name": "esDirector",
+          "type": "checkbox",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "docentes": {
+      "collection": "personas",
+      "module": "docentes",
+      "states": [
+        "Borrador",
+        "Publicado",
+        "Despublicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "foto",
+          "type": "image",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false,
+          "max": 8
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "nombres",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "apellidos",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "dni",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": true,
+          "max": 8
+        },
+        {
+          "name": "correo",
+          "type": "email",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "telefono",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "web",
+          "type": "url",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "especialidad",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "condicion",
+          "type": "select",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "progud",
+          "type": "custom",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "academica",
+          "type": "rows",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "experiencia",
+          "type": "rows",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "otros",
+          "type": "rows",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "required": false,
+          "publishRequired": false,
+          "unique": false,
+          "min": 1
+        }
+      ]
+    },
+    "locales": {
+      "collection": "locales",
+      "module": "locales",
+      "states": [
+        "Borrador",
+        "Publicado",
+        "Despublicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "telefono",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "direccion",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "correo",
+          "type": "email",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "horario",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "lat",
+          "type": "number",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "lng",
+          "type": "number",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "mapa",
+          "type": "custom",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "foto",
+          "type": "image",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "required": false,
+          "publishRequired": false,
+          "unique": false,
+          "min": 1
+        }
+      ]
+    },
+    "reconocimientos": {
+      "collection": "reconocimientos",
+      "module": "paginas",
+      "states": [
+        "Borrador",
+        "Publicado",
+        "Despublicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "anio",
+          "type": "number",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "resolucion",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "descripcion",
+          "type": "textarea",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "foto",
+          "type": "image",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "programas": {
+      "collection": "programas",
+      "module": "programas",
+      "states": [
+        "Borrador",
+        "Publicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": true
+        },
+        {
+          "name": "codigo",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": true
+        },
+        {
+          "name": "resumen",
+          "type": "textarea",
+          "required": true,
+          "publishRequired": false,
+          "unique": false,
+          "max": 300
+        },
+        {
+          "name": "imagen",
+          "type": "image",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "duracion",
+          "type": "text",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "modalidad",
+          "type": "select",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "turno",
+          "type": "text",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "horario",
+          "type": "text",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "perfil",
+          "type": "rich",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "campoItems",
+          "type": "lines",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "modulos",
+          "type": "custom",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "malla",
+          "type": "file",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "brochure",
+          "type": "file",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "coordinadorId",
+          "type": "select",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "coordinadorMsg",
+          "type": "textarea",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "convenios",
+          "type": "lines",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "egr",
+          "type": "info",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "required": true,
+          "publishRequired": false,
+          "unique": false,
+          "min": 1
+        }
+      ]
+    },
+    "egresados": {
+      "collection": "egresados",
+      "module": "egresados",
+      "states": [
+        "Borrador",
+        "Publicado",
+        "Despublicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "programaId",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "anio",
+          "type": "number",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "nombres",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": true
+        },
+        {
+          "name": "testimonio",
+          "type": "textarea",
+          "required": false,
+          "publishRequired": true,
+          "unique": false,
+          "max": 400
+        },
+        {
+          "name": "foto",
+          "type": "image",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "certificados": {
+      "collection": "certificados",
+      "module": "certificados",
+      "states": [
+        "Válido",
+        "Anulado"
+      ],
+      "pubState": "Válido",
+      "fields": [
+        {
+          "name": "codigo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": true
+        },
+        {
+          "name": "dni",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "nombres",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "programaId",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "fecha",
+          "type": "date",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "detalle",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "motivo",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "becas": {
+      "collection": "becarios",
+      "module": "becas",
+      "states": [
+        "Borrador",
+        "Publicado",
+        "Despublicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "periodoId",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "dni",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false,
+          "max": 8
+        },
+        {
+          "name": "apellidos",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "nombres",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "programaId",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "tipoId",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "motivo",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "becasper": {
+      "collection": "becasPeriodos",
+      "module": "becas",
+      "states": [
+        "Borrador",
+        "Publicado",
+        "Cerrado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "anio",
+          "type": "number",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "periodo",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "vigente",
+          "type": "checkbox",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "info",
+          "type": "info",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "becastipos": {
+      "collection": "tiposBeca",
+      "module": "becas",
+      "states": [
+        "Activo",
+        "Inactivo"
+      ],
+      "pubState": "Activo",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": true
+        },
+        {
+          "name": "descripcion",
+          "type": "textarea",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "enlaces": {
+      "collection": "enlaces",
+      "module": "enlaces",
+      "states": [
+        "Activo",
+        "Inactivo"
+      ],
+      "pubState": "Activo",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "grupo",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "url",
+          "type": "url",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "color",
+          "type": "color",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "verificado",
+          "type": "date",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "servicios": {
+      "collection": "servicios",
+      "module": "servicios",
+      "states": [
+        "Borrador",
+        "Publicado",
+        "Despublicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "icono",
+          "type": "select",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "descripcion",
+          "type": "textarea",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "ubicacion",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "horario",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "responsable",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "costo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "required": false,
+          "publishRequired": false,
+          "unique": false,
+          "min": 1
+        }
+      ]
+    },
+    "slides": {
+      "collection": "slides",
+      "module": "portada",
+      "states": [
+        "Borrador",
+        "Publicado",
+        "Despublicado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false,
+          "max": 70
+        },
+        {
+          "name": "texto",
+          "type": "textarea",
+          "required": false,
+          "publishRequired": false,
+          "unique": false,
+          "max": 180
+        },
+        {
+          "name": "boton",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false,
+          "max": 30
+        },
+        {
+          "name": "enlace",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "imagen",
+          "type": "image",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "required": true,
+          "publishRequired": false,
+          "unique": false,
+          "min": 1
+        }
+      ]
+    },
+    "usuarios": {
+      "collection": "usuarios",
+      "module": "usuarios",
+      "states": [
+        "Activo",
+        "Inactivo"
+      ],
+      "pubState": "Activo",
+      "fields": [
+        {
+          "name": "usuario",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": true
+        },
+        {
+          "name": "nombre",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "rol",
+          "type": "select",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "programaId",
+          "type": "select",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "vin",
+          "type": "select",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "dni",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false,
+          "max": 11
+        },
+        {
+          "name": "pass1",
+          "type": "password",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "pass2",
+          "type": "password",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "paginas": {
+      "collection": "paginas",
+      "module": "paginas",
+      "states": [
+        "Borrador",
+        "Publicada"
+      ],
+      "pubState": "Publicada",
+      "fields": [
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "contenido",
+          "type": "rich",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "imagen",
+          "type": "image",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "mensaje",
+          "type": "textarea",
+          "required": false,
+          "publishRequired": false,
+          "unique": false,
+          "max": 600
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": true
+        }
+      ]
+    },
+    "admision": {
+      "collection": "admisiones",
+      "module": "admision",
+      "states": [
+        "Borrador",
+        "Publicado",
+        "Cerrado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "anio",
+          "type": "number",
+          "required": true,
+          "publishRequired": false,
+          "unique": true
+        },
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "subtitulo",
+          "type": "text",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "descripcion",
+          "type": "textarea",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "prospecto",
+          "type": "file",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "reglamento",
+          "type": "file",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "resultados",
+          "type": "custom",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "vacantes",
+          "type": "custom",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "cronograma",
+          "type": "rows",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "requisitos",
+          "type": "lines",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "modalidades",
+          "type": "rows",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "vigente",
+          "type": "checkbox",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    },
+    "matricula": {
+      "collection": "matriculas",
+      "module": "matricula",
+      "states": [
+        "Borrador",
+        "Publicado",
+        "Cerrado"
+      ],
+      "pubState": "Publicado",
+      "fields": [
+        {
+          "name": "periodo",
+          "type": "text",
+          "required": true,
+          "publishRequired": false,
+          "unique": true
+        },
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "inicioClases",
+          "type": "date",
+          "required": false,
+          "publishRequired": true,
+          "unique": false
+        },
+        {
+          "name": "descripcion",
+          "type": "rich",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "items",
+          "type": "custom",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "docTasas",
+          "type": "file",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "cronograma",
+          "type": "rows",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        },
+        {
+          "name": "vigente",
+          "type": "checkbox",
+          "required": false,
+          "publishRequired": false,
+          "unique": false
+        }
+      ]
+    }
+  }
+}

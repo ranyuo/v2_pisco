@@ -1,0 +1,30 @@
+[
+  {
+    "package": "jspdf",
+    "version": "4.2.1",
+    "file": "jspdf.umd.min.js",
+    "sha256": "e6551fcdc32f09d6853b2c5126d18d01d9447e0da618a41a11ebeee0f6c20d54",
+    "tarball": "https://registry.npmjs.org/jspdf/-/jspdf-4.2.1.tgz",
+    "integrity": "sha512-YyAXyvnmjTbR4bHQRLzex3CuINCDlQnBqoSYyjJwTP2x9jDLuKDzy7aKUl0hgx3uhcl7xzg32agn5vlie6HIlQ=="
+  },
+  {
+    "package": "jspdf-autotable",
+    "version": "5.0.9",
+    "file": "jspdf.plugin.autotable.min.js",
+    "sha256": "83dd8e5ae29436bd3d3ef4f4a915125b3951264994c25de0359d3fbd105abe15",
+    "tarball": "https://registry.npmjs.org/jspdf-autotable/-/jspdf-autotable-5.0.9.tgz",
+    "integrity": "sha512-wIOG2ggjG6Y7qvqjgFACZZeu+oHxoxrhwCn1lTMxjPhojLVVvu2U2yS2srVCYl0CXe6pqiG/jQMIIS0CFn1ssw=="
+  },
+  {
+    "package": "qrcode-generator",
+    "version": "1.4.4",
+    "file": "qrcode.min.js",
+    "sha256": "164fc2c1c9eaf0a03aa8dfdb855e82e41a5c6922fbad8bb3238116207e26bef7"
+  },
+  {
+    "package": "xlsx",
+    "version": "0.20.3",
+    "file": "xlsx.full.min.js",
+    "sha256": "cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41"
+  }
+]

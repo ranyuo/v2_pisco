@@ -1,0 +1,15 @@
+# Sirve la versión WebP (archivo.png.webp) a los navegadores que la aceptan; el resto recibe el original.
+# Las URL guardadas en el contenido no cambian.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP_ACCEPT} image/webp
+    RewriteCond %{REQUEST_FILENAME}.webp -f
+    RewriteRule ^(.+\.(?:png|jpe?g))$ $1.webp [T=image/webp,E=webp:1,L]
+</IfModule>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(png|jpe?g)$">
+        Header append Vary Accept
+    </FilesMatch>
+    Header append Vary Accept env=webp
+</IfModule>
+AddType image/webp .webp

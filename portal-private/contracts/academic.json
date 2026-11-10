@@ -1,0 +1,936 @@
+{
+  "programas": {
+    "collection": "programas",
+    "fields": [
+      {
+        "name": "cod",
+        "type": "text",
+        "required": true,
+        "unique": true,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "nombre",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "dur",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "sem",
+        "type": "number",
+        "required": true,
+        "unique": false,
+        "min": 1,
+        "max": 10,
+        "pattern": null
+      },
+      {
+        "name": "activo",
+        "type": "bool",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  },
+  "uds": {
+    "collection": "uds",
+    "fields": [
+      {
+        "name": "cod",
+        "type": "text",
+        "required": true,
+        "unique": true,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "nombre",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "prog",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "ciclo",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "horas",
+        "type": "number",
+        "required": true,
+        "unique": false,
+        "min": 1,
+        "max": 12,
+        "pattern": null
+      },
+      {
+        "name": "cred",
+        "type": "number",
+        "required": true,
+        "unique": false,
+        "min": 1,
+        "max": 8,
+        "pattern": null
+      },
+      {
+        "name": "mod",
+        "type": "select",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  },
+  "docentes": {
+    "collection": "docentes",
+    "fields": [
+      {
+        "name": "per",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "uds",
+        "type": "multi",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "dias",
+        "type": "multi",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "desde",
+        "type": "time",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "hasta",
+        "type": "time",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  },
+  "ambientes": {
+    "collection": "ambientes",
+    "fields": [
+      {
+        "name": "cod",
+        "type": "text",
+        "required": true,
+        "unique": true,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "tipo",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "cap",
+        "type": "number",
+        "required": true,
+        "unique": false,
+        "min": 1,
+        "max": 200,
+        "pattern": null
+      },
+      {
+        "name": "ubic",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "caract",
+        "type": "text",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "prog",
+        "type": "select",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  },
+  "modulos": {
+    "collection": "modulos",
+    "fields": [
+      {
+        "name": "prog",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "cod",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "nombre",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "ciclos",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "horasTotal",
+        "type": "number",
+        "required": false,
+        "unique": false,
+        "min": 1,
+        "max": 10000,
+        "pattern": null
+      },
+      {
+        "name": "tipoHoras",
+        "type": "select",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  },
+  "estudiantes": {
+    "collection": "estudiantes",
+    "fields": [
+      {
+        "name": "dni",
+        "type": "text",
+        "required": true,
+        "unique": true,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "nom",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "prog",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "periodo",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "ciclo",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "sec",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "turno",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "estado",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "correo",
+        "type": "email",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "tel",
+        "type": "text",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  },
+  "certs": {
+    "collection": "certs",
+    "fields": [
+      {
+        "name": "est",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "mod",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "fecha",
+        "type": "date",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "num",
+        "type": "text",
+        "required": true,
+        "unique": true,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "institucion",
+        "type": "text",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "estadoDoc",
+        "type": "text",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "horasDoc",
+        "type": "number",
+        "required": false,
+        "unique": false,
+        "min": 1,
+        "max": 10000,
+        "pattern": null
+      },
+      {
+        "name": "tipoHoras",
+        "type": "text",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  },
+  "notas": {
+    "collection": "notas",
+    "fields": [
+      {
+        "name": "est",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "ud",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "periodo",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "nota",
+        "type": "number",
+        "required": true,
+        "unique": false,
+        "min": 0,
+        "max": 20,
+        "pattern": null
+      }
+    ]
+  },
+  "titulos": {
+    "collection": "titulos",
+    "fields": [
+      {
+        "name": "est",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "culm",
+        "type": "date",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "tit",
+        "type": "date",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "cod",
+        "type": "text",
+        "required": true,
+        "unique": true,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "resol",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "institucion",
+        "type": "text",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "estadoDoc",
+        "type": "text",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "denominacion",
+        "type": "text",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "nivel",
+        "type": "text",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "pais",
+        "type": "text",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "region",
+        "type": "text",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  },
+  "areas": {
+    "collection": "areas",
+    "fields": [
+      {
+        "name": "cod",
+        "type": "text",
+        "required": true,
+        "unique": true,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "nivel",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "nombre",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "resp",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "correo",
+        "type": "email",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "activo",
+        "type": "bool",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  },
+  "tramites": {
+    "collection": "tramites",
+    "fields": [
+      {
+        "name": "nombre",
+        "type": "text",
+        "required": true,
+        "unique": true,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "area",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "dias",
+        "type": "number",
+        "required": true,
+        "unique": false,
+        "min": 1,
+        "max": 60,
+        "pattern": null
+      },
+      {
+        "name": "req",
+        "type": "textarea",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  },
+  "empresas": {
+    "collection": "empresas",
+    "fields": [
+      {
+        "name": "ruc",
+        "type": "text",
+        "required": true,
+        "unique": true,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "nom",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "sector",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "ubic",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "contacto",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "correo",
+        "type": "email",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "validada",
+        "type": "bool",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  },
+  "ofertas": {
+    "collection": "ofertas",
+    "fields": [
+      {
+        "name": "emp",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "puesto",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "desc",
+        "type": "textarea",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "req",
+        "type": "textarea",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "modal",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "prog",
+        "type": "select",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "vac",
+        "type": "number",
+        "required": true,
+        "unique": false,
+        "min": 1,
+        "max": 50,
+        "pattern": null
+      },
+      {
+        "name": "limite",
+        "type": "date",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "estado",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  },
+  "usuarios": {
+    "collection": "usuarios",
+    "fields": [
+      {
+        "name": "u",
+        "type": "text",
+        "required": true,
+        "unique": true,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "nom",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "rol",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "estado",
+        "type": "select",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "pass",
+        "type": "text",
+        "required": true,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "area",
+        "type": "select",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "vin",
+        "type": "select",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      },
+      {
+        "name": "dni",
+        "type": "text",
+        "required": false,
+        "unique": false,
+        "min": null,
+        "max": null,
+        "pattern": null
+      }
+    ]
+  }
+}

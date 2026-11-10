@@ -1,0 +1,12 @@
+/portal-private/config.php
+/portal-private/config.*.php
+!/portal-private/config.example.php
+/portal-private/backups/
+/portal-private/.backups/
+/portal-private/*.lock
+/portal-private/*.log
+/tests/.results/
+/public_html/assets/cache/*
+!/public_html/assets/cache/.htaccess
+/portal-private/.smtp-settings.json
+/portal-private/.smtp-*

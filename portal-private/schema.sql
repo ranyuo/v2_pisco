@@ -1,0 +1,82 @@
+CREATE TABLE IF NOT EXISTS pisco_state (
+    id INT UNSIGNED PRIMARY KEY,
+    data JSON NOT NULL,
+    revision BIGINT UNSIGNED NOT NULL DEFAULT 1,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS pisco_users (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(80) NOT NULL UNIQUE,
+    name VARCHAR(150) NOT NULL,
+    email VARCHAR(254) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    role VARCHAR(30) NOT NULL DEFAULT 'admin',
+    profile JSON NULL,
+    auth_version INT UNSIGNED NOT NULL DEFAULT 1,
+    login_failures INT UNSIGNED NOT NULL DEFAULT 0,
+    locked_until DATETIME NULL,
+    last_login DATETIME NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS pisco_rate_limits (
+    rate_key CHAR(64) PRIMARY KEY,
+    hits INT UNSIGNED NOT NULL DEFAULT 1,
+    expires_at BIGINT UNSIGNED NOT NULL,
+    INDEX (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS pisco_schema (
+    id INT UNSIGNED PRIMARY KEY,
+    version INT UNSIGNED NOT NULL
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS pisco_visits (
+    visit_day DATE PRIMARY KEY,
+    views BIGINT UNSIGNED NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS pisco_files (
+    id CHAR(32) PRIMARY KEY,
+    owner_user_id BIGINT UNSIGNED NULL,
+    owner_session CHAR(64) NOT NULL,
+    filename VARCHAR(255) NOT NULL,
+    mime VARCHAR(150) NOT NULL,
+    size BIGINT UNSIGNED NOT NULL,
+    sha256 CHAR(64) NOT NULL,
+    contents LONGBLOB NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS pisco_audit (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    occurred_at DATETIME(6) NOT NULL,
+    user_id BIGINT UNSIGNED NULL,
+    username VARCHAR(80) NOT NULL,
+    role VARCHAR(30) NOT NULL,
+    action VARCHAR(80) NOT NULL,
+    entity VARCHAR(100) NOT NULL,
+    record_key VARCHAR(250) NOT NULL,
+    details JSON NOT NULL,
+    INDEX (occurred_at), INDEX (entity,record_key), INDEX (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS pisco_settings (
+    setting_key VARCHAR(80) PRIMARY KEY,
+    setting_value JSON NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS pisco_mail (
+    id CHAR(64) PRIMARY KEY,
+    record_id CHAR(64) NOT NULL,
+    source_type VARCHAR(30) NOT NULL DEFAULT 'expedientes',
+    source_id VARCHAR(100) NOT NULL DEFAULT '',
+    source_key CHAR(64) NOT NULL DEFAULT '',
+    event VARCHAR(40) NOT NULL DEFAULT 'registro',
+    reference VARCHAR(100) NOT NULL,
+    recipient VARCHAR(254) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Pendiente',
+    attempts INT UNSIGNED NOT NULL DEFAULT 0,
+    last_error VARCHAR(255) NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    next_attempt_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    sent_at DATETIME NULL,
+    INDEX (status,next_attempt_at), INDEX (record_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
