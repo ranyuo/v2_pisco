@@ -62,7 +62,7 @@ patch($app,['academico','recomendaciones'],[$rec]);
 // La empresa ve las recomendaciones de sus ofertas; otra empresa no.
 as_user($app,'qaempresa',$password,'empresa');$company=$app->bootstrap()['data']['academico'];
 verify(count($company['recomendaciones'])===1&&$company['recomendaciones'][0]['of']===1,'Company sees recommendations for its offers');
-verify((bool)array_filter($company['estudiantes'],fn($e)=>$e['id']===2&&$e['dni']==='****0002'),'Company sees the recommended person with masked DNI');
+verify((bool)array_filter($company['estudiantes'],fn($e)=>$e['id']===2&&$e['nom']==='QA Egresada'),'Company sees the name of the recommended person');
 verify((bool)array_filter($company['notifs'],fn($n)=>str_contains($n['txt'],'recomendó')),'Company is notified of the recommendation');
 as_user($app,'qaempresa2',$password,'empresa');$other=$app->bootstrap()['data']['academico'];
 verify(($other['recomendaciones']??[])===[]&&!array_filter($other['estudiantes'],fn($e)=>$e['id']===2),'Another company sees neither the recommendation nor the person');
@@ -73,6 +73,33 @@ verify((bool)array_filter($app->bootstrap()['data']['academico']['notifs'],fn($n
 $admin();$full=$app->bootstrap()['data']['academico'];verify(count($full['recomendaciones'])===1,'Administrator sees all recommendations');
 refuses(fn()=>saveRows($app,'ofertas',array_values(array_filter($full['ofertas'],fn($o)=>$o['id']!==1))),422,'relacionados','Offer with recommendations cannot be deleted');
 
+// Revisión: protecciones adicionales.
+$app->createAccount(['username'=>'qaatencion','name'=>'QA Atención','password'=>$password,'role'=>'atencion']);
+$acad=$app->bootstrap()['data']['academico'];
+saveRows($app,'ofertas',[...$acad['ofertas'],array_replace($offer(4,1,'Publicada',$later),['prog'=>3])]);
+patch($app,['academico','perms'],[...$acad['perms'],'doc'=>[...($acad['perms']['doc']??[]),'bolsa'=>2]]);
+$app->createAccount(['username'=>'qaest1','name'=>'QA Estudiante','password'=>$password,'role'=>'estudiante','vin'=>'est:1']);
+as_user($app,'qadocente',$password,'docente');$view=$app->bootstrap()['data']['academico'];
+verify(empty($view['postulaciones'])&&empty($view['perfilesLab'])&&!str_contains(json_encode($view['empresas']??[]),'uno@example.test'),'Teacher gets no applications, CVs or company contacts even if the matrix grants a Bolsa level');
+$emps=$view['empresas']??[];if($emps){$emps[0]['validada']=false;refuses(fn()=>patch($app,['academico','empresas'],$emps),403,'empresas','Teacher cannot modify companies even with a Bolsa level');}else verify(true,'Teacher cannot modify companies even with a Bolsa level (not visible)');
+$recs=$view['recomendaciones'];
+refuses(fn()=>patch($app,['academico','recomendaciones'],[...$recs,['id'=>1762780000010,'of'=>4,'est'=>1,'doc'=>1,'fecha'=>$today,'motivo'=>'']]),422,'otro programa','Recommendation for an offer of another programme rejected');
+refuses(fn()=>patch($app,['academico','recomendaciones'],[...$recs,['id'=>1762780000011,'of'=>1,'est'=>1,'doc'=>1,'fecha'=>'2020-01-01','motivo'=>'']]),422,'Fecha','Backdated recommendation rejected');
+refuses(fn()=>patch($app,['academico','recomendaciones'],[...$recs,['id'=>1762780000012,'of'=>1,'est'=>1,'doc'=>1,'fecha'=>'2026-02-31','motivo'=>'']]),422,'Fecha','Impossible recommendation date rejected');
+as_user($app,'qaempresa',$password,'empresa');$company=$app->bootstrap()['data']['academico'];
+$person=array_values(array_filter($company['estudiantes'],fn($e)=>$e['id']===2))[0]??[];
+verify($person&&!isset($person['correo'])&&!isset($person['tel'])&&!isset($person['dni']),'Company sees a recommended person who has not applied without DNI, e-mail or phone');
+verify(!array_filter($company['perfilesLab']??[],fn($r)=>($r['est']??null)===2),'Company does not receive the CV of a person who has not applied');
+as_user($app,'qaatencion',$password);$s=$app->bootstrap()['data']['academico'];
+refuses(fn()=>patch($app,['academico','recomendaciones'],[...$s['recomendaciones'],['id'=>1762780000013,'of'=>1,'est'=>1,'doc'=>1,'fecha'=>$today,'motivo'=>'']]),403,'docente','Staff cannot register recommendations on behalf of a teacher');
+$admin();$s=$app->bootstrap()['data']['academico'];patch($app,['academico','recomendaciones'],[]);
+verify($app->bootstrap()['data']['academico']['recomendaciones']===[],'Administrator can withdraw recommendations');
+saveRows($app,'ofertas',array_values(array_filter($s['ofertas'],fn($o)=>$o['id']!==4)));verify(!array_filter($app->bootstrap()['data']['academico']['ofertas'],fn($o)=>$o['id']===4),'Offer can be deleted once its recommendations are withdrawn');
+patch($app,['academico','perms'],$acad['perms']);
+// Instalaciones anteriores: los valores de la página pública los completa el servidor (el navegador no cambia la configuración al abrirla).
+$db=$app->db();$db->exec("UPDATE pisco_state SET data=JSON_REMOVE(data,'$.config.bolsa.diseno','$.config.bolsa.titulo','$.config.bolsa.perfiles') WHERE id=1");
+$fixed=PortalContent::normalize(json_decode($db->query('SELECT data FROM pisco_state WHERE id=1')->fetchColumn(),true))['config']['bolsa'];
+verify(($fixed['diseno']??'')==='actual'&&isset($fixed['perfiles']['estudiante'])&&($fixed['titulo']??'')!=='','Existing installs get the public-page defaults from the server');
 // Diseño configurable de la página pública.
 $bolsa=$app->bootstrap()['data']['config']['bolsa'];
 verify(($bolsa['diseno']??'')==='actual'&&isset($bolsa['perfiles']['docente']),'Default public design is the current one, with default card photos');

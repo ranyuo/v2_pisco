@@ -135,7 +135,10 @@ final class PortalDomain
             if(!in_array($student['estado']??'',['Regular','Egresado','Titulado'],true))throw new PortalError(422,'Solo se recomienda a estudiantes regulares, egresados o titulados.');
             $isNew=!PortalPolicy::find($o['recomendaciones'],'id',$r['id']);
             if($isNew&&(($offer['estado']??'')!=='Publicada'||($offer['limite']??'')<date('Y-m-d')))throw new PortalError(422,'Solo se recomienda para ofertas publicadas y vigentes.');
-            if(!is_string($r['fecha'])||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$r['fecha']))throw new PortalError(422,'Fecha de la recomendación no válida.');
+            $date=is_string($r['fecha'])?DateTimeImmutable::createFromFormat('!Y-m-d',$r['fecha']):false;
+            if(!$date||$date->format('Y-m-d')!==$r['fecha']||($isNew&&$r['fecha']!==date('Y-m-d')))throw new PortalError(422,'Fecha de la recomendación no válida.');
+            if($isNew&&!empty($offer['prog'])&&(int)$offer['prog']!==(int)$student['prog'])throw new PortalError(422,'La oferta corresponde a otro programa de estudios.');
+            if($isNew&&!(self::foreign($a['empresas'],$offer['emp'],'Empresa')['validada']??false))throw new PortalError(422,'La empresa de la oferta no está validada.');
             $reason=$r['motivo']??'';if(!is_string($reason)||preg_match_all('/./us',$reason)>500)throw new PortalError(422,'El motivo de la recomendación admite hasta 500 caracteres.');
             if(array_diff(array_keys($r),['id','of','est','doc','fecha','motivo']))throw new PortalError(422,'La recomendación tiene campos no permitidos.');
             foreach($a['recomendaciones'] as $other)if($other['id']!==$r['id']&&$other['of']===$r['of']&&$other['est']===$r['est']&&$other['doc']===$r['doc'])throw new PortalError(422,'Ya recomendaste a esa persona para esta oferta.');
@@ -206,7 +209,8 @@ final class PortalDomain
         foreach(self::changedRows($old['academico']['postulaciones'],$a['postulaciones'],'academico.postulaciones') as $r){$offer=PortalPolicy::find($a['ofertas'],'id',$r['of']);$notify('est:'.$r['est'],'Estado de tu postulación: '.$r['estado'],'bolsa');if($offer)$notify('emp:'.$offer['emp'],'Se actualizó una postulación a '.$offer['puesto'],'bolsa');}
         // Recomendación nueva de un docente: avisa a la empresa de la oferta y a la persona recomendada.
         foreach(self::changedRows($old['academico']['recomendaciones']??[],$a['recomendaciones']??[],'academico.recomendaciones') as $r)if(!PortalPolicy::find($old['academico']['recomendaciones']??[],'id',$r['id'])&&($offer=PortalPolicy::find($a['ofertas'],'id',$r['of']))){$notify('emp:'.$offer['emp'],'Un docente recomendó a un postulante para '.$offer['puesto'],'bolsa');$notify('est:'.$r['est'],'Un docente te recomendó para la oferta '.$offer['puesto'],'bolsa');}
-        foreach(self::changedRows($old['academico']['empresas'],$a['empresas'],'academico.empresas') as $r)$notify('emp:'.$r['id'],'Estado de validación: '.($r['estadoVal']??'Pendiente'),'bolsa');
+        // Aviso de validación solo cuando cambia la validación (no al actualizar los datos de contacto).
+        foreach(self::changedRows($old['academico']['empresas'],$a['empresas'],'academico.empresas') as $r){$before=PortalPolicy::find($old['academico']['empresas'],'id',$r['id']);if(!$before||($before['estadoVal']??null)!==($r['estadoVal']??null)||($before['validada']??null)!==($r['validada']??null))$notify('emp:'.$r['id'],'Estado de validación: '.($r['estadoVal']??'Pendiente'),'bolsa');}
         foreach($a['publicados'] as $group=>$published)if(!PortalPolicy::equal($old['academico']['publicados'][$group]??null,$published)){
             $parts=explode('|',$group);foreach($a['estudiantes'] as $student)if(count($parts)===5&&(string)$student['prog']===$parts[0]&&(string)$student['ciclo']===$parts[1]&&($student['sec']??'')===$parts[2]&&($student['turno']??'')===$parts[3])$notify('est:'.$student['id'],'Se publicó o actualizó tu horario académico.','horarios');
         }

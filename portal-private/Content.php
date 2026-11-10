@@ -23,7 +23,13 @@ final class PortalContent
             $data['config']['inst']['region']=count($parts)>=2?$parts[count($parts)-1]:'';
             $data['config']['inst']['distrito']=count($parts)>=3?$parts[count($parts)-2]:'';
             // «…, Pisco - Ica»: la última parte trae distrito y región separados por un guion.
-            if(count($parts)>=1&&preg_match('/^(.+?)\s+[-–]\s+(.+)$/u',$parts[count($parts)-1],$m)){$data['config']['inst']['distrito']=$m[1];$data['config']['inst']['region']=$m[2];}
+            if(count($parts)>=2&&preg_match('/^(\p{L}[\p{L} .]*?)\s+[-–]\s+(\p{L}[\p{L} .]*)$/u',$parts[count($parts)-1],$m)){$data['config']['inst']['distrito']=$m[1];$data['config']['inst']['region']=$m[2];}
+        }
+        // Diseño de la página pública de la Bolsa Laboral (instalaciones anteriores): se completa aquí y no en el navegador,
+        // porque un cambio de configuración hecho al abrir la página impediría guardar a los perfiles sin ese permiso.
+        if(isset($data['config']['bolsa'])&&is_array($data['config']['bolsa'])&&(!isset($data['config']['bolsa']['diseno'])||!isset($data['config']['bolsa']['titulo'])||!isset($data['config']['bolsa']['perfiles']))){
+            static $seedBolsa;$seedBolsa??=(json_decode((string)@file_get_contents(__DIR__.'/data/portal.json'),true)['config']['bolsa']??[]);
+            $data['config']['bolsa']+=['diseno'=>'actual','titulo'=>$seedBolsa['titulo']??'Bienvenido a la Bolsa Laboral','perfiles'=>$seedBolsa['perfiles']??[]];
         }
         // Recomendaciones de docentes de la Bolsa Laboral: colección nueva que las bases anteriores no tienen.
         if(isset($data['academico'])&&is_array($data['academico'])&&!isset($data['academico']['recomendaciones']))$data['academico']['recomendaciones']=[];

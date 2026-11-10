@@ -254,7 +254,9 @@ function confirmBox(title, msg, label, fn){ openModal({title, body:`<p>${msg}</p
 /* ---------- CRUD genérico ---------- */
 const ENT = {};
 function crudForm(ek, row, defaults){
-  if(lvl(ENT[ek].permMod)<2){toast("No tiene permiso de gestión.");return;}
+  // La empresa publica y edita sus propias ofertas (el servidor limita el alcance y las deja «Por validar»).
+  const ownOffer = ek === "ofertas" && R() === "emp" && !!myEmp() && (!row || row.emp === myEmp().id);
+  if(lvl(ENT[ek].permMod)<2 && !ownOffer){toast("No tiene permiso de gestión.");return;}
   const E = ENT[ek], fields = E.fields(row);if(ek==='programas'&&row?.pid)for(const f of fields)if(['cod','nombre'].includes(f.k)){f.ro=true;f.hint='Se administra desde el catálogo único de Programas de estudios.';}
   if(!row && !defaults && E.defaults) defaults = E.defaults();
   const base = row || defaults || {};
