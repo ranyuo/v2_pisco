@@ -46,6 +46,10 @@ try {
             $status = $result['status']; unset($result['status']);
             portal_json($result, $status);
         }
+        if ($route === 'api/identidad' && $method === 'POST') portal_json($app->identity($input));
+        if ($route === 'api/identidad/config' && $method === 'GET') portal_json($app->documentLookupForm());
+        if ($route === 'api/identidad/config' && $method === 'PUT') portal_json($app->saveDocumentLookup($input));
+        if ($route === 'api/identidad/prueba' && $method === 'POST') portal_json($app->testDocumentLookup($input));
         if (preg_match('#^api/consultas/([a-z]+)$#', $route, $match) && $method === 'POST') portal_json($app->lookup($match[1], $input));
         throw new PortalError(404, 'Ruta no encontrada.');
     }

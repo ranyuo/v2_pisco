@@ -25,4 +25,13 @@ return [
         'from_email' => 'notificaciones@instituto.edu.pe',
         'from_name' => 'Notificaciones · Nombre corto del instituto',
     ],
+    // Autocompletado de nombres por DNI y razón social por RUC en Mesa de Partes y Libro de Reclamaciones (MIGO API v2, https://docs.migo.pe/v2).
+    // Recomendado: configúralo en Configuración → Consulta de DNI y RUC (API); se guarda cifrado y tiene prioridad sobre este bloque.
+    // Si lo usas aquí, el token es privado: escríbelo solo en config.php del hosting, nunca en el repositorio.
+    'document_lookup' => [
+        'enabled' => false,
+        'provider' => 'migo', // Alternativa: 'decolecta' con base_url https://api.decolecta.com/v1.
+        'base_url' => 'https://api.migo.pe/api/v2',
+        'token' => getenv('PORTAL_DOCUMENT_TOKEN') ?: '',
+    ],
 ];

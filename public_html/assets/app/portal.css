@@ -3747,3 +3747,7 @@ body:not(.is-admin) .h-fbrand.b-long strong{max-width:none}
 .bl-sub{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
 .bl-of{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 .bl-of-c h3{margin:0 0 4px;font-size:17px}.bl-of-c .pb{display:flex;flex-direction:column;gap:8px;height:100%}.bl-of-c .bl-lg-a{margin-top:auto}
+
+/* Consulta de DNI y RUC: estado del autocompletado bajo el número de documento */
+.field .hint.pz-id-ok{color:var(--ok,#1d7a3a)}.field .hint.pz-id-err{color:var(--err,#b3261e)}.field .hint.pz-id-wait{font-style:italic}
+[data-idapi-clear][hidden]{display:none!important}

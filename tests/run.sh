@@ -48,3 +48,7 @@ PHP
  case "$suite" in stability) qa_test=stability.php;; mail) qa_test=mail-regressions.php;; load) qa_test=load-smoke.php;; bolsa) qa_test=bolsa-laboral.php;; esac
  d run --rm --network "$qa_id" -v "$qa_root:/app" -v "$qa_dir:/qa:ro" -e PORTAL_TEST_CONFIG_FILE=/qa/config.php -e PORTAL_SMTP_TEST_HOST=qa-smtp -e PORTAL_SMTP_TEST_CA=/qa/ca.pem "pisco-qa-php:$qa_php" php "tests/$qa_test"
 done
+# Consulta de DNI y RUC (sin base de datos): proveedor simulado y configuración cifrada.
+for qa_test in document-lookup.php document-lookup-settings.php; do
+ d run --rm -v "$qa_root:/app" "pisco-qa-php:$qa_php" php "tests/$qa_test"
+done
