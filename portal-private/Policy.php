@@ -76,6 +76,8 @@ final class PortalPolicy
         $role=self::ACADEMIC_ROLES[self::role($user)]??'';
         $portalModule=['alumnos'=>'ix-alumnos','horarios'=>'ix-horarios','certificados'=>'ix-certificados','titulos'=>'ix-titulos','bolsa'=>'ix-bolsa','config'=>'ix-config','usuarios'=>'usuarios','docentes'=>'cvdocente'][$module]??'';
         if ($module==='docentes' && self::role($user)==='docente') return self::can($user,'cvdocente')?2:0;
+        // El docente usa la Bolsa Laboral solo para recomendar: no recibe postulaciones, CV ni datos de empresas aunque la matriz le asigne un nivel.
+        if ($module==='bolsa' && self::role($user)==='docente') return 0;
         if (!$portalModule || !self::can($user,$portalModule)) return 0;
         return min(2,max(0,(int)($data['academico']['perms'][$role][$module]??0)));
     }
@@ -129,7 +131,8 @@ final class PortalPolicy
             if(in_array($key,['postulaciones','recomendaciones'],true))return in_array($row['of']??null,$offers,true);
             // La empresa ve a sus postulantes y a quienes los docentes recomendaron para sus ofertas.
             $recommended=array_column(array_filter($data['academico']['recomendaciones']??[],fn($r)=>in_array($r['of']??null,$offers,true)),'est');
-            if(in_array($key,['estudiantes','perfilesLab','certs'],true))return in_array($key==='estudiantes'?($row['id']??null):($row['est']??null),[...array_column($applications,'est'),...$recommended],true);
+            if($key==='estudiantes')return in_array($row['id']??null,[...array_column($applications,'est'),...$recommended],true);
+            if(in_array($key,['perfilesLab','certs'],true))return in_array($row['est']??null,array_column($applications,'est'),true);
         }
         return true;
     }
@@ -175,7 +178,12 @@ final class PortalPolicy
             if(!$read||in_array($key,['cfg','perms','publicados'],true))continue;
             if(!array_is_list($a[$key]??[]))continue;
             $rows=array_values(array_filter($a[$key]??[],fn($r)=>self::academicScope($key,$r,$full,$user)));
-            if($role==='empresa'&&$key==='estudiantes')$rows=array_map(function($r){$r=array_intersect_key($r,array_flip(['id','dni','nom','prog','estado','correo','tel']));$r['dni']='****'.substr((string)($r['dni']??''),-4);return $r;},$rows);
+            if($role==='empresa'&&$key==='estudiantes'){
+                $emp=self::binding($user,'emp');$offers=array_column(array_filter($a['ofertas']??[],fn($r)=>(int)($r['emp']??0)===$emp),'id');
+                $applicants=array_column(array_filter($a['postulaciones']??[],fn($r)=>in_array($r['of']??null,$offers,true)),'est');
+                // Contacto solo de quienes postularon; un recomendado que no postuló se ve con nombre, programa y condición.
+                $rows=array_map(function($r)use($applicants){$keep=in_array($r['id']??null,$applicants,true)?['id','dni','nom','prog','estado','correo','tel']:['id','nom','prog','estado'];$r=array_intersect_key($r,array_flip($keep));if(isset($r['dni']))$r['dni']='****'.substr((string)$r['dni'],-4);return $r;},$rows);
+            }
             $p[$key]=self::mergeVisible($p[$key]??[],$rows,'academico.'.$key);
         }
         if(in_array($role,['estudiante','egresado'],true)) {
@@ -257,6 +265,7 @@ final class PortalPolicy
             $docProfile=$role==='docente'&&$key==='perfilesDoc';
             $docRecommend=$role==='docente'&&$key==='recomendaciones';
             if($docRecommend&&!self::can($user,'ix-bolsa'))throw new PortalError(403,'Tu perfil no tiene habilitado el módulo de Bolsa Laboral.');
+            if($key==='recomendaciones'&&!$docRecommend)throw new PortalError(403,'Las recomendaciones las registra el docente; el administrador puede retirarlas.');
             $ownContact=in_array($role,['estudiante','egresado'],true)&&$key==='estudiantes';
             $ownDocument=in_array($role,['estudiante','egresado'],true)&&$key==='docs';
             $company=$role==='empresa'&&in_array($key,['empresas','ofertas','postulaciones'],true);

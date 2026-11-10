@@ -1,6 +1,7 @@
 /* Bolsa Laboral (Informe N.º 011, observación 5).
    - Diseño configurable de la página pública: «actual» (sin cambios) o «perfiles», con cuatro tarjetas de ingreso
-     (Estudiante/Egresado, Docente, Administrador y Empresa). Cada tarjeta solo admite su tipo de cuenta (el servidor lo exige).
+     (Estudiante/Egresado, Docente, Administrador y Empresa). Cada tarjeta orienta el ingreso y rechaza cuentas de otro perfil;
+     el acceso a los datos lo siguen controlando los permisos del servidor.
    - Docente: ve las ofertas vigentes y recomienda estudiantes o egresados; la empresa y el administrador ven las recomendaciones.
    - Carga masiva por Excel de empresas y ofertas (la de estudiantes y egresados ya existía), con cualquiera de los dos diseños.
    Se carga antes de standalone-services.js para que /bolsa-laboral.php también muestre el diseño elegido. */
@@ -39,7 +40,8 @@ const PERFILES=[
  {k:'empresa',label:'Empresa',icon:'building',text:'Publica convocatorias y revisa a tus postulantes.',user:'RUC',hint:'El RUC y la contraseña con que registraste tu empresa.'}];
 const TITULO_DEF='Bienvenido a la Bolsa Laboral';
 const PF=k=>PERFILES.find(p=>p.k===k);
-const cfg=()=>{const c=window.pzBolsaCfg();if(c.diseno!=='perfiles')c.diseno='actual';if(typeof c.titulo!=='string')c.titulo=TITULO_DEF;if(!c.perfiles||typeof c.perfiles!=='object'||Array.isArray(c.perfiles))c.perfiles={};return c;};
+// Copia de lectura: no se modifica la configuración al abrir la página (el servidor completa los valores que falten).
+const cfg=()=>{const c=window.pzBolsaCfg();return {diseno:c.diseno==='perfiles'?'perfiles':'actual',titulo:typeof c.titulo==='string'&&c.titulo.trim()?c.titulo:TITULO_DEF,perfiles:c.perfiles&&typeof c.perfiles==='object'&&!Array.isArray(c.perfiles)?c.perfiles:{}};};
 const fotoDe=k=>(cfg().perfiles[k]||{}).img||'';
 const hoy=()=>ymd(new Date());
 const D=()=>{const d=XD();if(!Array.isArray(d.recomendaciones))d.recomendaciones=[];return d;};
@@ -123,7 +125,7 @@ CUSTOM['ix-bolsa']=(parts,q)=>{
  if(t==='pagina')return paginaPublica();
  if(t==='carga')return cargaMasiva(q);
  const out=withTabs(baseCustom(parts,q),{'':'p',gestion:'g',empresas:'e',padron:'r',egresados:'s'}[t]||'p');
- if(t==='')return Object.assign({},out,{html:out.html+adminRecs()});
+ if(t==='')return Object.assign({},out,{html:out.html+adminRecs(),after:()=>{out.after&&out.after();bindAdminRecs();}});
  return out;
 };
 
@@ -150,11 +152,11 @@ function paginaPublica(){
    try{const data=await compressImage(file,1200,{q:.85});W.perfiles[inp.dataset.blImg]={img:data};route();}catch(e){toast('No se pudo procesar la imagen.','err');}});
   f.querySelectorAll('[data-bl-rm]').forEach(b=>b.onclick=()=>{W.perfiles[b.dataset.blRm]={img:''};route();});
   f.querySelector('[data-bl-cancel]').onclick=()=>{PAGE_WORK=null;route();};
-  f.onsubmit=ev=>{ev.preventDefault();if(ro)return;const c=cfg();const prev={diseno:c.diseno,titulo:c.titulo,perfiles:c.perfiles};
+  f.onsubmit=ev=>{ev.preventDefault();if(ro)return;const c=window.pzBolsaCfg();const prev={diseno:c.diseno,titulo:c.titulo,perfiles:c.perfiles};
    const titulo=String(W.titulo||'').trim().slice(0,120)||TITULO_DEF;
    Object.assign(c,{diseno:W.diseno==='perfiles'?'perfiles':'actual',titulo,perfiles:Object.fromEntries(PERFILES.map(p=>[p.k,{img:(W.perfiles[p.k]||{}).img||''}]))});
    audit('Configuración','Bolsa laboral',`Diseño de la página pública: ${c.diseno==='perfiles'?'con perfiles':'actual'}`);
-   if(saveDB()){PAGE_WORK=null;toast(`Diseño guardado: ${c.diseno==='perfiles'?'con perfiles':'actual'}.`,'ok');route();}else Object.assign(c,prev);
+   if(saveDB()){PAGE_WORK=null;toast(`Diseño guardado: ${c.diseno==='perfiles'?'con perfiles':'actual'}.`,'ok');route();}else{for(const k of ['diseno','titulo','perfiles'])if(prev[k]===undefined)delete c[k];else c[k]=prev[k];}
   };
  }};
 }
@@ -197,9 +199,9 @@ function recomendar(ofId){
   else{const list=D().recomendaciones;list.splice(list.indexOf(rec),1);err.textContent='No se pudo guardar la recomendación.';}
  };
 }
-function recsTable(rows,withCompany){
+function recsTable(rows,withCompany,canRemove){
  const d=D();
- return `<div class="tbl-wrap" style="border:0"><table class="tbl light"><thead><tr><th>Fecha</th><th>Oferta</th>${withCompany?'<th>Empresa</th>':''}<th>Recomendado</th><th>Docente</th><th>Motivo</th></tr></thead><tbody>${rows.map(r=>{const o=d.ofertas.find(x=>x.id===r.of)||{};const e=d.estudiantes.find(x=>x.id===r.est)||{};return `<tr><td>${fdx(r.fecha)}</td><td><b>${esc(o.puesto||'—')}</b></td>${withCompany?`<td>${esc(xemp(o.emp).nom)}</td>`:''}<td>${esc(e.nom||'—')}<br><small>${esc(condLabel(e))}${e.prog?' · '+esc(xprog(e.prog).cod):''}${e.correo?' · '+esc(e.correo):''}</small></td><td>${esc(docName(r.doc))}</td><td>${esc(r.motivo||'')}</td></tr>`;}).join('')}</tbody></table></div>`;
+ return `<div class="tbl-wrap" style="border:0"><table class="tbl light"><thead><tr><th>Fecha</th><th>Oferta</th>${withCompany?'<th>Empresa</th>':''}<th>Recomendado</th><th>Docente</th><th>Motivo</th>${canRemove?'<th></th>':''}</tr></thead><tbody>${rows.map(r=>{const o=d.ofertas.find(x=>x.id===r.of)||{};const e=d.estudiantes.find(x=>x.id===r.est)||{};return `<tr><td>${fdx(r.fecha)}</td><td><b>${esc(o.puesto||'—')}</b></td>${withCompany?`<td>${esc(xemp(o.emp).nom)}</td>`:''}<td>${esc(e.nom||'—')}<br><small>${esc(condLabel(e))}${e.prog?' · '+esc(xprog(e.prog).cod):''}${e.correo?' · '+esc(e.correo):''}</small></td><td>${esc(docName(r.doc))}</td><td>${esc(r.motivo||'')}</td>${canRemove?`<td class="c"><button type="button" class="btn xs ghost" data-bl-adel="${r.id}">Retirar</button></td>`:''}</tr>`;}).join('')}</tbody></table></div>`;
 }
 function empresaRecs(){
  const d=D(),emp=binding(currentUser(),'emp');if(!emp)return '';
@@ -207,8 +209,14 @@ function empresaRecs(){
  return `<section class="panel" style="margin-top:16px" data-bl-emprecs><h2>Recomendaciones de docentes (${rows.length})</h2><div class="pb">${rows.length?'<p class="note">Docentes del instituto recomiendan a estas personas para sus ofertas. Pueden invitarlas a postular.</p>'+recsTable(rows,false):'<p class="note">Aún no hay recomendaciones de docentes para sus ofertas.</p>'}</div></section>`;
 }
 function adminRecs(){
- const rows=D().recomendaciones.slice().sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
- return `<div class="panel" style="margin-top:16px" data-bl-admrecs><h2><span>Recomendaciones de docentes (${rows.length})</span></h2><div class="pb">${rows.length?recsTable(rows.slice(0,20),true):'<p class="note">Los docentes recomiendan estudiantes y egresados desde su ingreso a la Bolsa Laboral.</p>'}</div></div>`;
+ const rows=D().recomendaciones.slice().sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));const admin=currentUser()?.rol==='admin';
+ // Solo el administrador las retira (por ejemplo, para poder eliminar después una oferta, un alumno o un docente).
+ return `<div class="panel" style="margin-top:16px" data-bl-admrecs><h2><span>Recomendaciones de docentes (${rows.length})</span></h2><div class="pb">${rows.length?recsTable(rows,true,admin):'<p class="note">Los docentes recomiendan estudiantes y egresados desde su ingreso a la Bolsa Laboral.</p>'}</div></div>`;
+}
+function bindAdminRecs(){
+ document.querySelectorAll('[data-bl-adel]').forEach(b=>b.onclick=async()=>{const list=D().recomendaciones;const r=list.find(x=>x.id===+b.dataset.blAdel);if(!r)return;
+  if(!await confirmBox('¿Retirar esta recomendación? La empresa y el docente dejarán de verla.',{ok:'Retirar'}))return;
+  const i=list.indexOf(r);list.splice(i,1);IX.logAct('Retirar recomendación','Bolsa laboral',`Oferta ${r.of} · persona ${r.est}`);if(IX.persist()){toast('Recomendación retirada.','ok');route();}else list.splice(i,0,r);});
 }
 
 /* ---------- Carga masiva por Excel: empresas y ofertas ---------- */
@@ -256,7 +264,7 @@ function parseRows(kind,rows){
 function plantilla(kind){
  const K=KINDS[kind];const rows=[K.cols,...K.sample];
  if(window.XLSX){const wb=XLSX.utils.book_new();const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=K.cols.map(c=>({wch:Math.max(14,c.length+4)}));XLSX.utils.book_append_sheet(wb,ws,K.label.slice(0,30));
-  const help=kind==='empresas'?['RUC: 11 dígitos con dígito verificador válido (obligatorio).','Razón social, sector, ubicación, persona de contacto y correo: obligatorios.','Las empresas cargadas quedan validadas por el instituto y aparecen como aliadas; para que ingresen, cree su cuenta en Usuarios y roles o pídales registrarse.','Si el RUC ya existe, se actualizan sus datos sin cambiar su validación.']:['RUC de la empresa: debe estar registrada y validada (cárguela antes en «Empresas»).','Puesto, descripción, requisitos y fecha límite (dd/mm/aaaa): obligatorios.','Modalidad: Presencial, Híbrido o Remoto.','Programa de estudio: nombre o sigla (vacío = cualquier programa).','Vacantes: de 1 a 50. Las ofertas cargadas quedan publicadas.'];
+  const help=kind==='empresas'?['RUC: 11 dígitos con dígito verificador válido (obligatorio).','Razón social, sector, ubicación, persona de contacto y correo: obligatorios.','Las empresas cargadas quedan validadas por el instituto y aparecen como aliadas; para que ingresen, cree su cuenta en Usuarios y roles o pídales registrarse.','Si el RUC ya existe, se actualizan sus datos sin cambiar su validación.']:['RUC de la empresa: debe estar registrada y validada (cárguela antes en «Empresas»).','Puesto, descripción, requisitos y fecha límite (dd/mm/aaaa): obligatorios.','Modalidad: Presencial, Híbrido o Remoto.','Programa de estudio: nombre o sigla (vacío = cualquier programa).','Vacantes: de 1 a 50. Las ofertas cargadas (nuevas o actualizadas) quedan publicadas.'];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Instrucciones'],...help.map(x=>[x])]),'Instrucciones');XLSX.writeFile(wb,K.file+'.xlsx');}
  else downloadText(toCSV(rows),K.file+'.csv','text/csv');
 }
@@ -280,13 +288,13 @@ function cargaMasiva(q){
   const im=document.querySelector('[data-bl-ci]');if(im)im.onclick=async()=>{
    if(!write)return;
    if(!await confirmBox(`Se importarán ${ok.length} registro(s) de ${K.label.toLowerCase()}: ${ok.filter(i=>!i.existe).length} nuevos y ${ok.filter(i=>i.existe).length} actualizaciones. ¿Continuar?`,{ok:'Importar',danger:false,title:'Carga masiva'}))return;
-   const d=D(),u=currentUser(),snapshot=JSON.stringify([d.empresas,d.ofertas]);let nN=0,nU=0;
+   const d=D(),u=currentUser(),snapshot=JSON.stringify([d.empresas,d.ofertas]),logLen=(d.bitacora||[]).length;let nN=0,nU=0;
    if(kind==='empresas')ok.forEach(i=>{const data={nom:i.nom};for(const f of ['sector','ubic','dir','contacto','cargoC','correo','tel','web'])if(i[f])data[f]=i[f];
     if(i.existe){Object.assign(i.existe,data);nU++;}else{d.empresas.push(Object.assign({id:IX.nextIdOf('empresas'),ruc:i.ruc,sector:'',ubic:'',contacto:'',correo:''},data,{validada:true,estadoVal:'Aprobada',motivoRech:'',valPor:u.usuario,fechaVal:hoy(),origen:'Carga masiva'}));nN++;}});
-   else ok.forEach(i=>{const data={emp:i.emp.id,puesto:i.puesto,desc:i.desc,req:i.req,modal:i.modal,prog:i.prog||'',vac:i.vac,limite:i.limite};
+   else ok.forEach(i=>{const data={emp:i.emp.id,puesto:i.puesto,desc:i.desc,req:i.req,modal:i.modal,prog:i.prog||'',vac:i.vac,limite:i.limite,estado:'Publicada'};
     if(i.existe){Object.assign(i.existe,data);nU++;}else{d.ofertas.push(Object.assign({id:IX.nextIdOf('ofertas'),fecha:hoy(),estado:'Publicada',origen:'Carga masiva'},data));nN++;}});
    IX.logAct('Carga masiva de '+K.label.toLowerCase(),'Bolsa laboral',`${CARGA.nombre}: ${nN} nuevos, ${nU} actualizados`);
-   if(!IX.persist()){const [e,o]=JSON.parse(snapshot);d.empresas.splice(0,d.empresas.length,...e);d.ofertas.splice(0,d.ofertas.length,...o);return;}
+   if(!IX.persist()){const [e,o]=JSON.parse(snapshot);d.empresas.splice(0,d.empresas.length,...e);d.ofertas.splice(0,d.ofertas.length,...o);if(Array.isArray(d.bitacora))d.bitacora.length=logLen;return;}
    CARGA=null;toast(`${K.label}: ${nN} nuevo(s) y ${nU} actualizado(s).`,'ok');route();
   };
  }};
