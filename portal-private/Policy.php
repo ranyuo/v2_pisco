@@ -104,7 +104,9 @@ final class PortalPolicy
         if($role==='coordinador' && in_array($key,['programas','uds','modulos','ambientes','estudiantes','sesiones'],true)) return ($key==='programas'?($row['id']??null):($row['prog']??null))===self::ownProgram($data,$user);
         if(in_array($role,['estudiante','egresado'],true)) {
             if($key==='estudiantes')return $est!==null&&(int)($row['id']??0)===$est;
-            if(in_array($key,['certs','notas','titulos','perfilesLab','postulaciones','recomendaciones'],true))return $est!==null&&(int)($row['est']??0)===$est;
+            // La persona ve las recomendaciones que el instituto no tiene en revisión ni rechazó.
+            if($key==='recomendaciones')return $est!==null&&(int)($row['est']??0)===$est&&!in_array($row['estado']??'',['En revisión','No aprobada'],true);
+            if(in_array($key,['certs','notas','titulos','perfilesLab','postulaciones'],true))return $est!==null&&(int)($row['est']??0)===$est;
             if($key==='docs'){
                 if(($row['tipo']??'')==='cert')return $est!==null&&(int)($row['ref']??0)===$est&&self::find($data['academico']['certs']??[],'est',$est)!==null;
                 if(($row['tipo']??'')!=='titulo')return false;
@@ -128,10 +130,10 @@ final class PortalPolicy
             if($key==='ofertas')return $emp!==null&&(int)($row['emp']??0)===$emp;
             $offers=array_column(array_filter($data['academico']['ofertas']??[],fn($r)=>(int)($r['emp']??0)===$emp),'id');
             $applications=array_filter($data['academico']['postulaciones']??[],fn($r)=>in_array($r['of']??null,$offers,true));
-            if(in_array($key,['postulaciones','recomendaciones'],true))return in_array($row['of']??null,$offers,true);
-            // La empresa ve a sus postulantes y a quienes los docentes recomendaron para sus ofertas.
-            $recommended=array_column(array_filter($data['academico']['recomendaciones']??[],fn($r)=>in_array($r['of']??null,$offers,true)),'est');
-            if($key==='estudiantes')return in_array($row['id']??null,[...array_column($applications,'est'),...$recommended],true);
+            if($key==='postulaciones')return in_array($row['of']??null,$offers,true);
+            // La empresa solo ve una recomendación cuando la persona la aceptó y postuló; nunca a quien no postuló.
+            if($key==='recomendaciones')return in_array($row['of']??null,$offers,true)&&($row['estado']??'')==='Aceptada';
+            if($key==='estudiantes')return in_array($row['id']??null,array_column($applications,'est'),true);
             if(in_array($key,['perfilesLab','certs'],true))return in_array($row['est']??null,array_column($applications,'est'),true);
         }
         return true;
@@ -181,8 +183,8 @@ final class PortalPolicy
             if($role==='empresa'&&$key==='estudiantes'){
                 $emp=self::binding($user,'emp');$offers=array_column(array_filter($a['ofertas']??[],fn($r)=>(int)($r['emp']??0)===$emp),'id');
                 $applicants=array_column(array_filter($a['postulaciones']??[],fn($r)=>in_array($r['of']??null,$offers,true)),'est');
-                // Contacto solo de quienes postularon; un recomendado que no postuló se ve con nombre, programa y condición.
-                $rows=array_map(function($r)use($applicants){$keep=in_array($r['id']??null,$applicants,true)?['id','dni','nom','prog','estado','correo','tel']:['id','nom','prog','estado'];$r=array_intersect_key($r,array_flip($keep));if(isset($r['dni']))$r['dni']='****'.substr((string)$r['dni'],-4);return $r;},$rows);
+                // Solo quienes postularon (incluidos los recomendados que aceptaron y postularon).
+                $rows=array_map(function($r){$r=array_intersect_key($r,array_flip(['id','dni','nom','prog','estado','correo','tel']));if(isset($r['dni']))$r['dni']='****'.substr((string)$r['dni'],-4);return $r;},array_values(array_filter($rows,fn($r)=>in_array($r['id']??null,$applicants,true))));
             }
             $p[$key]=self::mergeVisible($p[$key]??[],$rows,'academico.'.$key);
         }
@@ -190,9 +192,11 @@ final class PortalPolicy
             foreach(['certs','notas','titulos','perfilesLab','postulaciones','estudiantes'] as $key)$p[$key]=array_values(array_filter($a[$key]??[],fn($r)=>self::academicScope($key,$r,$full,$user)));
         }
         if($role==='docente')$p['perfilesDoc']=array_values(array_filter($a['perfilesDoc']??[],fn($r)=>self::academicScope('perfilesDoc',$r,$full,$user)));
-        // Bolsa Laboral: para recomendar, el docente ve solo nombre, programa y condición de estudiantes y egresados, y sus propias recomendaciones.
+        // Bolsa Laboral: para recomendar, el docente ve solo nombre, programa y condición de las personas a quienes dictó
+        // (con las unidades didácticas que lo sustentan) y sus propias recomendaciones.
         if($role==='docente'&&self::can($user,'ix-bolsa')){
-            $p['estudiantes']=self::mergeVisible($p['estudiantes']??[],array_map(fn($r)=>array_intersect_key($r,array_flip(['id','nom','prog','estado'])),array_values(array_filter($a['estudiantes']??[],fn($r)=>in_array($r['estado']??'',['Regular','Egresado','Titulado'],true)))),'academico.estudiantes');
+            $taught=($doc=self::binding($user,'doc'))!==null?PortalDomain::teaches($a,$doc):[];
+            $p['estudiantes']=self::mergeVisible($p['estudiantes']??[],array_map(fn($r)=>[...array_intersect_key($r,array_flip(['id','nom','prog','estado'])),'ensena'=>$taught[(int)$r['id']]],array_values(array_filter($a['estudiantes']??[],fn($r)=>isset($taught[(int)($r['id']??0)])))),'academico.estudiantes');
             $p['recomendaciones']=array_values(array_filter($a['recomendaciones']??[],fn($r)=>self::academicScope('recomendaciones',$r,$full,$user)));
         }
         if($role==='empresa')$p['recomendaciones']=array_values(array_filter($a['recomendaciones']??[],fn($r)=>self::academicScope('recomendaciones',$r,$full,$user)));
@@ -264,15 +268,18 @@ final class PortalPolicy
             $ownProfile=in_array($role,['estudiante','egresado'],true)&&in_array($key,['perfilesLab','postulaciones'],true);
             $docProfile=$role==='docente'&&$key==='perfilesDoc';
             $docRecommend=$role==='docente'&&$key==='recomendaciones';
-            if($docRecommend&&!self::can($user,'ix-bolsa'))throw new PortalError(403,'Tu perfil no tiene habilitado el módulo de Bolsa Laboral.');
-            if($key==='recomendaciones'&&!$docRecommend)throw new PortalError(403,'Las recomendaciones las registra el docente; el administrador puede retirarlas.');
+            // La persona recomendada responde (acepta o no) y el personal con edición de la Bolsa revisa, si así se configuró.
+            $ownRecommend=in_array($role,['estudiante','egresado'],true)&&$key==='recomendaciones';
+            $staffRecommend=$key==='recomendaciones'&&!in_array($role,self::COMMUNITY,true)&&self::level($full,$user,'bolsa')>=2;
+            if(($docRecommend||$ownRecommend)&&!self::can($user,'ix-bolsa'))throw new PortalError(403,'Tu perfil no tiene habilitado el módulo de Bolsa Laboral.');
+            if($key==='recomendaciones'&&!$docRecommend&&!$ownRecommend&&!$staffRecommend)throw new PortalError(403,'Las recomendaciones las registra el docente; el administrador puede retirarlas.');
             $ownContact=in_array($role,['estudiante','egresado'],true)&&$key==='estudiantes';
             $ownDocument=in_array($role,['estudiante','egresado'],true)&&$key==='docs';
             $company=$role==='empresa'&&in_array($key,['empresas','ofertas','postulaciones'],true);
             if(($ownProfile||$company)&&!self::can($user,'ix-bolsa'))throw new PortalError(403,'Tu perfil no tiene habilitado el módulo de Bolsa Laboral.');
             if($docProfile&&!self::can($user,'cvdocente'))throw new PortalError(403,'Tu perfil no tiene habilitado el módulo de CV docente.');
             if($ownDocument&&!self::can($user,'ix-certificados')&&!self::can($user,'ix-titulos'))throw new PortalError(403,'Tu perfil no tiene habilitada la emisión de documentos.');
-            if(!$module||(!$ownProfile&&!$docProfile&&!$docRecommend&&!$company&&!$ownContact&&!$ownDocument&&self::level($full,$user,$module)<2))throw new PortalError(403,'Tu rol no puede modificar el módulo académico '.$key.'.');
+            if(!$module||(!$ownProfile&&!$docProfile&&!$docRecommend&&!$ownRecommend&&!$company&&!$ownContact&&!$ownDocument&&self::level($full,$user,$module)<2))throw new PortalError(403,'Tu rol no puede modificar el módulo académico '.$key.'.');
             if($key==='cfg'){
                 if($role==='coordinador')throw new PortalError(403,'Los parámetros generales requieren Secretaría o Administración.');
                 foreach($value as $setting=>$v)if(!self::equal($base['cfg'][$setting]??null,$v)){if(in_array($setting,['nombre','siglas','director','direccion','web'],true))throw new PortalError(403,'La identidad institucional se configura en Configuración.');$out['cfg'][$setting]=$v;}continue;
@@ -304,6 +311,7 @@ final class PortalPolicy
             if(($old&&!$scope($old))||($new&&!$scope($new)))throw new PortalError(403,'Intento de modificar datos de otra persona o programa.');
             if(!$old&&isset($stored[$id]))throw new PortalError(403,'Identificador perteneciente a otro registro.');
             if(!$new&&self::role($user)!=='admin'&&!(in_array(self::role($user),['estudiante','egresado'],true)&&$path==='academico.postulaciones')&&!(self::role($user)==='docente'&&$path==='academico.recomendaciones'))throw new PortalError(403,'Solo el administrador puede eliminar definitivamente.');
+            if(!$new&&self::role($user)==='docente'&&$path==='academico.recomendaciones'&&!in_array($old['estado']??'',['En revisión','Pendiente'],true))throw new PortalError(403,'Una recomendación que la persona ya respondió no se retira.');
             self::guardRecord($path,$old,$new,$user);
             if($new)$stored[$id]=$new;else unset($stored[$id]);
         }
@@ -317,6 +325,12 @@ final class PortalPolicy
         if(in_array($role,['estudiante','egresado'],true)&&$path==='academico.estudiantes'&&array_diff($changes,['correo','tel']))throw new PortalError(403,'Solo puedes actualizar tu correo y teléfono.');
         if(in_array($role,['estudiante','egresado'],true)&&$path==='academico.docs'&&$old!==null)throw new PortalError(403,'No puedes modificar documentos ya emitidos.');
         if($role==='docente'&&$path==='academico.recomendaciones'&&$old!==null)throw new PortalError(403,'Una recomendación enviada no se edita: retírala y registra una nueva.');
+        if($path==='academico.recomendaciones'&&$role!=='docente'){
+            if($old===null)throw new PortalError(403,'Las recomendaciones las registra el docente; el administrador puede retirarlas.');
+            $student=in_array($role,['estudiante','egresado'],true);
+            if(array_diff($changes,$student?['estado','fechaResp']:['estado','obs','fechaRev']))throw new PortalError(403,$student?'Solo puedes aceptar o no aceptar la recomendación.':'Solo se aprueba o no una recomendación en revisión.');
+            if(!$student&&($old['estado']??'')!=='En revisión')throw new PortalError(403,'Solo se revisan recomendaciones pendientes de revisión.');
+        }
         if($role==='docente'&&$path==='personas'&&array_diff($changes,['cv','titulo','dni','telefono','foto','modPor','modEn']))throw new PortalError(403,'El docente solo puede modificar su propio CV.');
         if($role==='empresa') {
             $allowed=match($path){

@@ -75,7 +75,7 @@ const shortName = n => { if(!n) return "—"; const p = n.split(" "); return p.l
 const initials = n => n.split(" ").filter(Boolean).filter((_,i,a)=> i===0 || i===a.length-2).map(x=>x[0]).join("").slice(0,2).toUpperCase();
 const kb = b => b > 1048576 ? (b/1048576).toFixed(1)+" MB" : Math.max(1,Math.round(b/1024))+" KB";
 const pill = (t,c) => `<span class="pill ${c}">${esc(t)}</span>`;
-const EST_CLS = {"Recibido":"p-info","Derivado":"p-info","En evaluación":"p-warn","Observado":"p-bad","En atención":"p-warn","Atendido":"p-ok","Respondido":"p-ok","Cerrado":"p-mut","Publicada":"p-ok","Por validar":"p-warn","Rechazada":"p-bad","Cerrada":"p-mut","En revisión":"p-warn","Recibida":"p-info","Seleccionado":"p-ok","No seleccionado":"p-mut","Regular":"p-info","Egresado":"p-ok","Titulado":"p-brand","Retirado":"p-mut","Activo":"p-ok","Inactivo":"p-mut","Nombrado":"p-brand","Contratado":"p-info"};
+const EST_CLS = {"Recibido":"p-info","Derivado":"p-info","En evaluación":"p-warn","Observado":"p-bad","En atención":"p-warn","Atendido":"p-ok","Respondido":"p-ok","Cerrado":"p-mut","Publicada":"p-ok","Por validar":"p-warn","Rechazada":"p-bad","Cerrada":"p-mut","En revisión":"p-warn","Recibida":"p-info","Seleccionado":"p-ok","No seleccionado":"p-mut","Regular":"p-info","Egresado":"p-ok","Titulado":"p-brand","Retirado":"p-mut","Activo":"p-ok","Inactivo":"p-mut","Nombrado":"p-brand","Contratado":"p-info","Pendiente":"p-warn","Aceptada":"p-ok","Declinada":"p-mut","No aprobada":"p-bad"};
 const estPill = e => pill(e, EST_CLS[e] || "p-mut");
 function toast(msg){ HOST.toast(msg) }
 function genCode(){ return [...crypto.getRandomValues(new Uint8Array(12))].map(v=>v.toString(16).padStart(2,"0")).join("").toUpperCase(); }
@@ -1390,14 +1390,24 @@ V.bolsa = () => {
   if(r === "est" || r === "egr"){
     const e = myEst(); if(!e) return intro + empty("Cuenta sin estudiante vinculado.");
     const mine = DB.postulaciones.filter(p => p.est === e.id);
-    const T = tabs("bolsa", [["ofertas","Ofertas disponibles"],["mias","Mis postulaciones", mine.length || ""],["perfil","Mi perfil profesional"]]);
+    // Recomendaciones de docentes: la persona decide si acepta; la empresa solo la ve si acepta y postula.
+    const recs = (DB.recomendaciones || []).filter(x => x.est === e.id).sort((a,b) => String(b.fecha).localeCompare(String(a.fecha)));
+    const recPend = recs.filter(x => x.estado === "Pendiente").length;
+    const T = tabs("bolsa", [["ofertas","Ofertas disponibles"],["mias","Mis postulaciones", mine.length || ""],["recs","Recomendaciones", recPend || ""],["perfil","Mi perfil profesional"]]);
+    const recAlert = recPend && T.cur !== "recs" ? `<div class="alert info">Un docente te recomendó para ${recPend === 1 ? "una oferta" : recPend + " ofertas"}. <button class="btn sm" data-tab="bolsa:recs">Ver y responder</button></div>` : "";
+    if(T.cur === "recs") return intro + T.html + `<section class="panel"><h2>Recomendaciones de docentes</h2>
+      <p class="note">Un docente que te enseñó puede recomendarte para una oferta. Tú decides: si aceptas, postulas con tu CV y la empresa verá la recomendación junto a tu postulación; si no la aceptas, la empresa no se entera. La recomendación es un respaldo y no reemplaza la evaluación de la empresa.</p>
+      ${recs.length ? recs.map(x => { const o = byId(DB.ofertas, x.of) || {}, d = byId(DB.docentes, x.doc) || {}, vig = o.estado === "Publicada" && o.limite >= today();
+        return `<article class="ficha" style="margin-top:12px"><div class="panel-h"><div><h3 style="margin:0">${esc(o.puesto || "Oferta")}</h3><span class="note">${esc(empresa(o.emp).nom || "")} · cierra ${fd(o.limite)}</span></div>${x.estado === "Declinada" ? pill("No aceptada","p-mut") : x.estado === "Pendiente" ? pill("Por responder","p-warn") : estPill(x.estado)}</div>
+        <dl class="dl"><dt>Docente</dt><dd>${esc(d.nom || "Docente")}</dd>${x.ud ? `<dt>Unidad didáctica</dt><dd>${esc(x.ud)}</dd>` : ""}<dt>Fecha</dt><dd>${fd(x.fecha)}</dd><dt>Motivo</dt><dd>${esc(x.motivo || "—")}</dd>${x.fechaResp ? `<dt>Tu respuesta</dt><dd>${x.estado === "Aceptada" ? "Aceptada" : "No aceptada"} el ${fd(x.fechaResp)}</dd>` : ""}</dl>
+        ${x.estado === "Pendiente" ? (vig ? `<div class="btnrow"><button class="btn sm" data-act="aceptarRec" data-id="${x.id}">Aceptar y postular</button><button class="btn ghost sm" data-act="declinarRec" data-id="${x.id}">No aceptar</button></div>` : `<p class="note">La oferta ya no está vigente.</p>`) : ""}</article>` }).join("") : empty("Aún no tienes recomendaciones de docentes.")}</section>`;
     if(T.cur === "ofertas"){
       const solo = S.ui.bSolo !== false, q = (S.q.of || "").toLowerCase();
       let ofs = DB.ofertas.filter(o => o.estado === "Publicada" && empresa(o.emp).validada);
       if(solo) ofs = ofs.filter(o => !o.prog || o.prog === e.prog);
       if(q) ofs = ofs.filter(o => [o.puesto,o.desc,o.req,empresa(o.emp).nom].join(" ").toLowerCase().includes(q));
       ofs.sort((a,b) => (b.limite >= today()) - (a.limite >= today()) || a.limite.localeCompare(b.limite));
-      return intro + T.html + `<section class="panel"><div class="panel-h"><h2>${ofs.length} oportunidad(es)</h2><div class="tools"><input class="search" type="search" id="q_of" data-q="of" placeholder="Buscar puesto o empresa…" value="${esc(S.q.of||"")}" aria-label="Buscar ofertas"><label class="switch"><input type="checkbox" data-chg="bSolo" ${solo ? "checked" : ""}> Solo de ${prog(e.prog).cod}</label></div></div>
+      return intro + T.html + recAlert + `<section class="panel"><div class="panel-h"><h2>${ofs.length} oportunidad(es)</h2><div class="tools"><input class="search" type="search" id="q_of" data-q="of" placeholder="Buscar puesto o empresa…" value="${esc(S.q.of||"")}" aria-label="Buscar ofertas"><label class="switch"><input type="checkbox" data-chg="bSolo" ${solo ? "checked" : ""}> Solo de ${prog(e.prog).cod}</label></div></div>
       ${perfilLab(e.id).cv ? "" : `<div class="alert info">Para postular necesitas subir tu CV. <button class="btn sm" data-tab="bolsa:perfil">Completar mi perfil</button></div>`}
       ${ofs.length ? `<div class="grid3">${ofs.map(o => ofertaCard(o,"cand")).join("")}</div>` : empty("No hay ofertas con esos criterios.")}</section>`;
     }
@@ -1846,7 +1856,19 @@ const ACTIONS = {
       DB.postulaciones.push({id:nextId(DB.postulaciones), of:o.id, est:e.id, fecha:today(), estado:"Recibida"});
       const u = HOST.users().find(z => z.vin === "emp:"+o.emp); if(u) notify("u:"+u.id, `Nueva postulación a “${o.puesto}”`, "bolsa");
       log("Postular","Bolsa laboral",`${e.dni} → ${o.puesto}`); if(!save())return false; toast("Postulación enviada. La empresa revisará tu perfil."); render() }) },
-  retirarPost(id){ confirmBox("Retirar postulación","Se retirará tu postulación a esta oferta.","Retirar",() => { DB.postulaciones = DB.postulaciones.filter(p => p.id !== +id); log("Retirar postulación","Bolsa laboral",String(id)); if(!save())return false; toast("Postulación retirada."); render() }) },
+  aceptarRec(id){ const e = myEst(), x = (DB.recomendaciones || []).find(r => r.id === +id); if(!e || !x) return; const o = byId(DB.ofertas, x.of), d = byId(DB.docentes, x.doc) || {}, p = perfilLab(e.id);
+    if(!p.cv){ toast("Para aceptar, primero sube tu CV en “Mi perfil profesional”."); S.tab.bolsa = "perfil"; render(); return }
+    const ya = DB.postulaciones.some(z => z.est === e.id && z.of === o.id);
+    confirmBox("Aceptar recomendación", `Aceptarás la recomendación de <b>${esc(d.nom || "tu docente")}</b>${ya ? "" : ` y postularás a <b>${esc(o.puesto)}</b> en ${esc(empresa(o.emp).nom)} con el CV <b>${esc(p.cv.n)}</b>`}. La empresa verá tu postulación junto con el motivo de la recomendación.`, "Aceptar y postular", () => {
+      const prev = x.estado; if(!ya) DB.postulaciones.push({id:nextId(DB.postulaciones), of:o.id, est:e.id, fecha:today(), estado:"Recibida"});
+      x.estado = "Aceptada"; x.fechaResp = today(); log("Aceptar recomendación","Bolsa laboral",`${e.dni} → ${o.puesto}`);
+      if(!save()){ x.estado = prev; delete x.fechaResp; if(!ya) DB.postulaciones.pop(); return false }
+      toast("Recomendación aceptada y postulación enviada."); render() }) },
+  declinarRec(id){ const x = (DB.recomendaciones || []).find(r => r.id === +id); if(!x) return;
+    confirmBox("No aceptar recomendación", "El docente sabrá que no aceptaste la recomendación. La empresa no recibirá ningún dato tuyo.", "No aceptar", () => {
+      x.estado = "Declinada"; x.fechaResp = today(); log("No aceptar recomendación","Bolsa laboral",String(x.id));
+      if(!save()){ x.estado = "Pendiente"; delete x.fechaResp; return false } toast("Respuesta registrada."); render() }) },
+  retirarPost(id){ confirmBox("Retirar postulación","Se retirará tu postulación a esta oferta. Si la acompañaba la recomendación de un docente, quedará como no aceptada.","Retirar",() => { const post = DB.postulaciones.find(p => p.id === +id); if(post) (DB.recomendaciones || []).forEach(x => { if(x.est === post.est && x.of === post.of && x.estado === "Aceptada"){ x.estado = "Declinada"; x.fechaResp = today() } }); DB.postulaciones = DB.postulaciones.filter(p => p.id !== +id); log("Retirar postulación","Bolsa laboral",String(id)); if(!save())return false; toast("Postulación retirada."); render() }) },
   valOf(id){ const o = byId(DB.ofertas,+id); o.estado = "Publicada"; const u = HOST.users().find(z => z.vin === "emp:"+o.emp); if(u) notify("u:"+u.id,`Tu oferta “${o.puesto}” fue aprobada y publicada`,"bolsa");
     DB.estudiantes.filter(e => !o.prog || e.prog === o.prog).forEach(e => { const us = HOST.users().find(z => z.vin === "est:"+e.id); if(us) notify("u:"+us.id,`Nueva oferta laboral: ${o.puesto}`,"bolsa") });
     if(!empresa(o.emp).validada) toast("Oferta aprobada. Recuerde validar también a la empresa para que sea visible."); else toast("Oferta aprobada y publicada.");

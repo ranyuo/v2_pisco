@@ -33,6 +33,11 @@ final class PortalContent
         }
         // Recomendaciones de docentes de la Bolsa Laboral: colección nueva que las bases anteriores no tienen.
         if(isset($data['academico'])&&is_array($data['academico'])&&!isset($data['academico']['recomendaciones']))$data['academico']['recomendaciones']=[];
+        // Recomendaciones anteriores al flujo transparente: la persona aún no las aceptó, así que quedan pendientes de su respuesta
+        // (la empresa deja de verlas hasta que acepte y postule).
+        if(is_array($data['academico']['recomendaciones']??null))foreach($data['academico']['recomendaciones'] as &$rec)if(is_array($rec)&&!isset($rec['estado']))$rec['estado']='Pendiente';
+        unset($rec);
+        if(isset($data['config']['bolsa'])&&is_array($data['config']['bolsa'])&&!isset($data['config']['bolsa']['revisarRecomendaciones']))$data['config']['bolsa']['revisarRecomendaciones']=false;
         // «Impacto institucional» era Impacto con los colores del portal; desde que todas las estructuras usan esos colores es la misma.
         if(($data['config']['diseno']??null)==='impacto-flv')$data['config']['diseno']='impacto';
         if(isset($data['config']['disenoColores']['impacto-flv'])&&is_array($data['config']['disenoColores'])){

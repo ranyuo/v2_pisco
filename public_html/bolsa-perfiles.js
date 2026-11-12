@@ -49,6 +49,11 @@ const binding=(u,type)=>{const m=String(u?.vin||'').match(new RegExp('^'+type+':
 const vigentes=()=>{const d=D();return d.ofertas.filter(o=>o.estado==='Publicada'&&o.limite>=hoy()&&(d.empresas.find(e=>e.id===o.emp)||{}).validada).sort((a,b)=>a.limite.localeCompare(b.limite));};
 const docName=id=>(D().docentes.find(x=>x.id===id)||{}).nom||'Docente';
 const condLabel=e=>e.estado==='Regular'?'Estudiante':(e.estado||'');
+/* Recomendación transparente: el docente propone con motivo y sustento; la persona decide; la empresa solo la ve si aceptó y postuló. */
+const REC_LABEL={'En revisión':['En revisión del instituto','warn'],'Pendiente':['Esperando respuesta','warn'],'Aceptada':['Aceptada · postuló','ok'],'Declinada':['No aceptada','gray'],'No aprobada':['No aprobada','err']};
+const recPill=r=>{const[l,c]=REC_LABEL[r.estado]||[r.estado||'—','gray'];return `<span class="badge ${c}">${esc(l)}</span>`;};
+const revisar=()=>!!window.pzBolsaCfg().revisarRecomendaciones;
+const REC_MAX=3;
 // Identificadores amplios: el docente solo ve sus propias recomendaciones y no debe chocar con las de otros.
 const newRecId=()=>{let id;const used=new Set(D().recomendaciones.map(r=>r.id));do{id=Date.now()*100+Math.floor(Math.random()*100);}while(used.has(id));return id;};
 
@@ -168,55 +173,81 @@ function docenteBolsa(q){
  const ofs=vigentes();
  const head=admHead('Bolsa laboral','Ofertas vigentes y recomendaciones a estudiantes y egresados','','briefcase',[['Servicios'],['Bolsa laboral']]);
  const tabs=tabsBar([['ofertas','Ofertas vigentes','#/admin/ix-bolsa'],['mias',`Mis recomendaciones (${mine.length})`,'#/admin/ix-bolsa?tab=mias']],tab);
- const warn=doc?'':'<div class="notice warn" style="margin-bottom:14px">Tu cuenta no está vinculada a un docente de la plana académica, por eso no puedes registrar recomendaciones. Solicita a Secretaría Académica que la vincule en <b>Usuarios y roles</b>.</div>';
+ const taught=d.estudiantes.filter(e=>Array.isArray(e.ensena)&&e.ensena.length);
+ const how=`<div class="notice" style="margin-bottom:14px"><b>Cómo funciona la recomendación.</b> Solo puedes recomendar a personas a quienes dictaste una unidad didáctica (según tus horarios o las notas registradas), con un motivo. ${revisar()?'El instituto la revisa primero; luego ':''}La persona decide si la acepta: si acepta, postula y la empresa ve tu recomendación junto a su postulación; si no, la empresa no se entera. Hasta ${REC_MAX} recomendaciones por oferta.</div>`;
+ const warn=!doc?'<div class="notice warn" style="margin-bottom:14px">Tu cuenta no está vinculada a un docente de la plana académica, por eso no puedes registrar recomendaciones. Solicita a Secretaría Académica que la vincule en <b>Usuarios y roles</b>.</div>':taught.length?how:how+'<div class="notice warn" style="margin-bottom:14px">Aún no hay estudiantes ni egresados vinculados a tus unidades didácticas (horario del periodo vigente o notas registradas). Consulta con Secretaría Académica.</div>';
  let body;
  if(tab==='ofertas')body=ofs.length?`<div class="bl-of">${ofs.map(o=>{const n=mine.filter(r=>r.of===o.id).length;return `<article class="panel bl-of-c"><div class="pb"><h3>${esc(o.puesto)}</h3><p class="note">${esc(xemp(o.emp).nom)} · ${esc(o.modal)} · ${o.prog?esc(xprog(o.prog).nombre):'Cualquier programa'} · ${+o.vac||1} vacante(s) · cierra ${fdx(o.limite)}</p><p>${esc(String(o.desc||'').slice(0,240))}${String(o.desc||'').length>240?'…':''}</p>
-  <div class="bl-lg-a">${doc?`<button type="button" class="btn sm" data-bl-rec="${o.id}">${sic('star',15)} Recomendar</button>`:''}${n?`<span class="badge ok">${n} recomendado(s) por ti</span>`:''}</div></div></article>`;}).join('')}</div>`:'<div class="empty">No hay ofertas vigentes por el momento.</div>';
- else body=mine.length?`<div class="panel"><div class="tbl-wrap" style="border:0"><table class="tbl light"><thead><tr><th>Fecha</th><th>Oferta</th><th>Recomendado</th><th>Motivo</th><th></th></tr></thead><tbody>${mine.map(r=>{const o=d.ofertas.find(x=>x.id===r.of)||{};const e=d.estudiantes.find(x=>x.id===r.est)||{};return `<tr><td>${fdx(r.fecha)}</td><td><b>${esc(o.puesto||'—')}</b><br><small>${esc(xemp(o.emp).nom)}</small></td><td>${esc(e.nom||'—')}<br><small>${esc(condLabel(e))}${e.prog?' · '+esc(xprog(e.prog).cod):''}</small></td><td>${esc(r.motivo||'')}</td><td class="c"><button type="button" class="btn xs ghost" data-bl-del="${r.id}">Retirar</button></td></tr>`;}).join('')}</tbody></table></div></div>`:'<div class="empty">Aún no registras recomendaciones. Ve a «Ofertas vigentes» y presiona «Recomendar».</div>';
+  <div class="bl-lg-a">${doc&&taught.length&&n<REC_MAX?`<button type="button" class="btn sm" data-bl-rec="${o.id}">${sic('star',15)} Recomendar</button>`:''}${n?`<span class="badge ok">${n} de ${REC_MAX} recomendación(es) tuyas</span>`:''}</div></div></article>`;}).join('')}</div>`:'<div class="empty">No hay ofertas vigentes por el momento.</div>';
+ else body=mine.length?`<div class="panel"><div class="tbl-wrap" style="border:0"><table class="tbl light"><thead><tr><th>Fecha</th><th>Oferta</th><th>Recomendado</th><th>Unidad didáctica y motivo</th><th>Estado</th><th></th></tr></thead><tbody>${mine.map(r=>{const o=d.ofertas.find(x=>x.id===r.of)||{};const e=d.estudiantes.find(x=>x.id===r.est)||{};return `<tr><td>${fdx(r.fecha)}</td><td><b>${esc(o.puesto||'—')}</b><br><small>${esc(xemp(o.emp).nom)}</small></td><td>${esc(e.nom||'Persona recomendada')}${e.estado?`<br><small>${esc(condLabel(e))}${e.prog?' · '+esc(xprog(e.prog).cod):''}</small>`:''}</td><td>${r.ud?`<small><b>${esc(r.ud)}</b></small><br>`:''}${esc(r.motivo||'')}${r.estado==='No aprobada'&&r.obs?`<br><small class="note">Instituto: ${esc(r.obs)}</small>`:''}</td><td>${recPill(r)}${r.fechaResp||r.fechaRev?`<br><small>${fdx(r.fechaResp||r.fechaRev)}</small>`:''}</td><td class="c">${['En revisión','Pendiente'].includes(r.estado)?`<button type="button" class="btn xs ghost" data-bl-del="${r.id}">Retirar</button>`:''}</td></tr>`;}).join('')}</tbody></table></div></div>`:'<div class="empty">Aún no registras recomendaciones. Ve a «Ofertas vigentes» y presiona «Recomendar».</div>';
  return {html:head+tabs+warn+body,after:()=>{
   document.querySelectorAll('[data-bl-rec]').forEach(b=>b.onclick=()=>recomendar(+b.dataset.blRec));
-  document.querySelectorAll('[data-bl-del]').forEach(b=>b.onclick=async()=>{const r=D().recomendaciones.find(x=>x.id===+b.dataset.blDel);if(!r)return;if(!await confirmBox('¿Retirar esta recomendación? La empresa dejará de verla.',{ok:'Retirar'}))return;
+  document.querySelectorAll('[data-bl-del]').forEach(b=>b.onclick=async()=>{const r=D().recomendaciones.find(x=>x.id===+b.dataset.blDel);if(!r)return;if(!await confirmBox('¿Retirar esta recomendación? La persona dejará de verla.',{ok:'Retirar'}))return;
    const list=D().recomendaciones;const i=list.indexOf(r);list.splice(i,1);if(IX.persist()){toast('Recomendación retirada.','ok');route();}else list.splice(i,0,r);});
  }};
 }
 function recomendar(ofId){
  const d=D(),u=currentUser(),doc=binding(u,'doc');const o=d.ofertas.find(x=>x.id===ofId);if(!o||!doc)return;
- const ya=new Set(d.recomendaciones.filter(r=>r.of===ofId&&r.doc===doc).map(r=>r.est));
- const people=d.estudiantes.filter(e=>['Regular','Egresado','Titulado'].includes(e.estado)&&(!o.prog||e.prog===o.prog)&&!ya.has(e.id)).sort((a,b)=>String(a.nom).localeCompare(String(b.nom)));
+ const mineHere=d.recomendaciones.filter(r=>r.of===ofId&&r.doc===doc);const ya=new Set(mineHere.map(r=>r.est));const left=REC_MAX-mineHere.length;
+ const people=d.estudiantes.filter(e=>Array.isArray(e.ensena)&&e.ensena.length&&['Regular','Egresado','Titulado'].includes(e.estado)&&(!o.prog||e.prog===o.prog)&&!ya.has(e.id)).sort((a,b)=>String(a.nom).localeCompare(String(b.nom)));
  const opts=list=>list.map(e=>`<option value="${e.id}">${esc(e.nom)} · ${esc(condLabel(e))} · ${esc(xprog(e.prog).cod)}</option>`).join('');
- const m=modal({title:'Recomendar para la oferta',body:`<form class="bl-lg" data-bl-recf novalidate><p><b>${esc(o.puesto)}</b><br><span class="note">${esc(xemp(o.emp).nom)}${o.prog?' · solo '+esc(xprog(o.prog).nombre):''}</span></p>
-  ${people.length?`<div class="field"><label for="bl-rq">Buscar persona</label><input id="bl-rq" type="search" placeholder="Escribe un nombre" autocomplete="off"></div>
-  <div class="field"><label for="bl-re">Estudiante o egresado</label><select id="bl-re" name="est" required size="6">${opts(people)}</select></div>
-  <div class="field"><label for="bl-rm">Motivo de la recomendación (opcional)</label><textarea id="bl-rm" name="motivo" rows="4" maxlength="500" placeholder="Ej.: Destacó en las prácticas de laboratorio y en trabajo en equipo."></textarea><div class="hint" data-bl-n>0 / 500</div></div>
-  <p class="bl-lg-err" data-bl-err role="alert"></p><div class="bl-lg-a"><button class="btn" type="submit">${sic('send',16)} Enviar recomendación</button></div>`:'<p class="notice">No hay estudiantes ni egresados disponibles para esta oferta (o ya los recomendaste a todos).</p>'}</form>`});
- const f=m.el.querySelector('[data-bl-recf]');if(!people.length)return;
- const sel=f.est,qs=f.querySelector('#bl-rq');qs.oninput=()=>{const t=nrm(qs.value);sel.innerHTML=opts(people.filter(e=>!t||nrm(e.nom).includes(t)));};
- f.motivo.oninput=()=>{f.querySelector('[data-bl-n]').textContent=`${f.motivo.value.length} / 500`;};
- f.onsubmit=ev=>{ev.preventDefault();const est=+sel.value;const err=f.querySelector('[data-bl-err]');if(!est){err.textContent='Selecciona a la persona que recomiendas.';return;}
-  const rec={id:newRecId(),of:o.id,est,doc,fecha:hoy(),motivo:f.motivo.value.trim().slice(0,500)};
+ const flow=revisar()?'El instituto revisará la recomendación y luego la persona decidirá si la acepta.':'La persona recibirá la recomendación y decidirá si la acepta.';
+ const m=modal({title:'Recomendar para la oferta',body:`<form class="bl-lg" data-bl-recf novalidate><p><b>${esc(o.puesto)}</b><br><span class="note">${esc(xemp(o.emp).nom)}${o.prog?' · solo '+esc(xprog(o.prog).nombre):''} · te quedan ${left} de ${REC_MAX} recomendaciones para esta oferta</span></p>
+  ${people.length&&left>0?`<div class="field"><label for="bl-rq">Buscar persona</label><input id="bl-rq" type="search" placeholder="Escribe un nombre" autocomplete="off"></div>
+  <div class="field"><label for="bl-re">Estudiante o egresado a quien enseñaste</label><select id="bl-re" name="est" required size="6">${opts(people)}</select></div>
+  <div class="field"><label for="bl-ru">Unidad didáctica en la que fue tu estudiante</label><select id="bl-ru" name="ud" required><option value="">Primero elige a la persona</option></select></div>
+  <div class="field"><label for="bl-rm">Motivo de la recomendación</label><textarea id="bl-rm" name="motivo" rows="4" required minlength="20" maxlength="500" placeholder="Ej.: Destacó en las prácticas de laboratorio y en el trabajo en equipo."></textarea><div class="hint" data-bl-n>0 / 500 · mínimo 20 caracteres</div></div>
+  <p class="note">${flow} Si acepta, postulará y la empresa verá tu recomendación junto a su postulación. Si no la acepta, la empresa no recibe ningún dato.</p>
+  <p class="bl-lg-err" data-bl-err role="alert"></p><div class="bl-lg-a"><button class="btn" type="submit">${sic('send',16)} Enviar recomendación</button></div>`:`<p class="notice">${left<=0?`Ya registraste ${REC_MAX} recomendaciones para esta oferta.`:'No hay estudiantes ni egresados de tus unidades didácticas disponibles para esta oferta (o ya los recomendaste).'}</p>`}</form>`});
+ const f=m.el.querySelector('[data-bl-recf]');if(!people.length||left<=0)return;
+ const sel=f.est,qs=f.querySelector('#bl-rq'),udSel=f.ud;
+ const fillUd=()=>{const e=people.find(x=>x.id===+sel.value);udSel.innerHTML=e?e.ensena.map(n=>`<option>${esc(n)}</option>`).join(''):'<option value="">Primero elige a la persona</option>';};
+ qs.oninput=()=>{const t=nrm(qs.value);sel.innerHTML=opts(people.filter(e=>!t||nrm(e.nom).includes(t)));fillUd();};sel.onchange=fillUd;
+ f.motivo.oninput=()=>{f.querySelector('[data-bl-n]').textContent=`${f.motivo.value.length} / 500 · mínimo 20 caracteres`;};
+ f.onsubmit=ev=>{ev.preventDefault();const est=+sel.value;const err=f.querySelector('[data-bl-err]');err.textContent='';
+  if(!est){err.textContent='Selecciona a la persona que recomiendas.';return;}
+  if(!udSel.value){err.textContent='Indica la unidad didáctica en la que fue tu estudiante.';return;}
+  const motivo=f.motivo.value.trim();if(motivo.replace(/\s/g,'').length<20){err.textContent='Explica el motivo de la recomendación (al menos 20 caracteres).';return;}
+  const rec={id:newRecId(),of:o.id,est,doc,fecha:hoy(),motivo:motivo.slice(0,500),ud:udSel.value,estado:revisar()?'En revisión':'Pendiente'};
   D().recomendaciones.push(rec);
-  if(IX.persist()){m.close();toast('Recomendación enviada. La empresa ya puede verla.','ok');route();}
+  if(IX.persist()){m.close();toast(revisar()?'Recomendación enviada al instituto para su revisión.':'Recomendación enviada. La persona decidirá si la acepta.','ok');route();}
   else{const list=D().recomendaciones;list.splice(list.indexOf(rec),1);err.textContent='No se pudo guardar la recomendación.';}
  };
 }
-function recsTable(rows,withCompany,canRemove){
+function recsTable(rows,withCompany,actions){
  const d=D();
- return `<div class="tbl-wrap" style="border:0"><table class="tbl light"><thead><tr><th>Fecha</th><th>Oferta</th>${withCompany?'<th>Empresa</th>':''}<th>Recomendado</th><th>Docente</th><th>Motivo</th>${canRemove?'<th></th>':''}</tr></thead><tbody>${rows.map(r=>{const o=d.ofertas.find(x=>x.id===r.of)||{};const e=d.estudiantes.find(x=>x.id===r.est)||{};return `<tr><td>${fdx(r.fecha)}</td><td><b>${esc(o.puesto||'—')}</b></td>${withCompany?`<td>${esc(xemp(o.emp).nom)}</td>`:''}<td>${esc(e.nom||'—')}<br><small>${esc(condLabel(e))}${e.prog?' · '+esc(xprog(e.prog).cod):''}${e.correo?' · '+esc(e.correo):''}</small></td><td>${esc(docName(r.doc))}</td><td>${esc(r.motivo||'')}</td>${canRemove?`<td class="c"><button type="button" class="btn xs ghost" data-bl-adel="${r.id}">Retirar</button></td>`:''}</tr>`;}).join('')}</tbody></table></div>`;
+ return `<div class="tbl-wrap" style="border:0"><table class="tbl light"><thead><tr><th>Fecha</th><th>Oferta</th>${withCompany?'<th>Empresa</th>':''}<th>Recomendado</th><th>Docente</th><th>Unidad didáctica y motivo</th>${withCompany?'<th>Estado</th>':''}${actions?'<th></th>':''}</tr></thead><tbody>${rows.map(r=>{const o=d.ofertas.find(x=>x.id===r.of)||{};const e=d.estudiantes.find(x=>x.id===r.est)||{};return `<tr><td>${fdx(r.fecha)}</td><td><b>${esc(o.puesto||'—')}</b></td>${withCompany?`<td>${esc(xemp(o.emp).nom)}</td>`:''}<td>${esc(e.nom||'—')}<br><small>${esc(condLabel(e))}${e.prog?' · '+esc(xprog(e.prog).cod):''}</small></td><td>${esc(docName(r.doc))}</td><td>${r.ud?`<small><b>${esc(r.ud)}</b></small><br>`:''}${esc(r.motivo||'')}${r.obs?`<br><small class="note">Instituto: ${esc(r.obs)}</small>`:''}</td>${withCompany?`<td>${recPill(r)}</td>`:''}${actions?`<td class="c">${actions(r)}</td>`:''}</tr>`;}).join('')}</tbody></table></div>`;
 }
 function empresaRecs(){
  const d=D(),emp=binding(currentUser(),'emp');if(!emp)return '';
  const mine=new Set(d.ofertas.filter(o=>o.emp===emp).map(o=>o.id));const rows=d.recomendaciones.filter(r=>mine.has(r.of)).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
- return `<section class="panel" style="margin-top:16px" data-bl-emprecs><h2>Recomendaciones de docentes (${rows.length})</h2><div class="pb">${rows.length?'<p class="note">Docentes del instituto recomiendan a estas personas para sus ofertas. Pueden invitarlas a postular.</p>'+recsTable(rows,false):'<p class="note">Aún no hay recomendaciones de docentes para sus ofertas.</p>'}</div></section>`;
+ return `<section class="panel" style="margin-top:16px" data-bl-emprecs><h2>Postulantes recomendados por docentes (${rows.length})</h2><div class="pb">${rows.length?'<p class="note">Estas personas aceptaron la recomendación de un docente que les enseñó y postularon a su oferta. La recomendación es un respaldo: no reemplaza su evaluación.</p>'+recsTable(rows,false):'<p class="note">Cuando una persona recomendada por un docente acepte la recomendación y postule a sus ofertas, la verá aquí.</p>'}</div></section>`;
 }
 function adminRecs(){
- const rows=D().recomendaciones.slice().sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));const admin=currentUser()?.rol==='admin';
- // Solo el administrador las retira (por ejemplo, para poder eliminar después una oferta, un alumno o un docente).
- return `<div class="panel" style="margin-top:16px" data-bl-admrecs><h2><span>Recomendaciones de docentes (${rows.length})</span></h2><div class="pb">${rows.length?recsTable(rows,true,admin):'<p class="note">Los docentes recomiendan estudiantes y egresados desde su ingreso a la Bolsa Laboral.</p>'}</div></div>`;
+ const rows=D().recomendaciones.slice().sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));const admin=currentUser()?.rol==='admin';const review=canWriteAcademic('bolsa');
+ const count=k=>rows.filter(r=>r.estado===k).length;
+ const stats=rows.length?`<p class="note">${rows.length} en total · ${count('En revisión')} en revisión · ${count('Pendiente')} esperando respuesta · ${count('Aceptada')} aceptadas · ${count('Declinada')} no aceptadas · ${count('No aprobada')} no aprobadas.</p>`:'';
+ const toggle=`<label class="bl-opt-i" style="margin-bottom:12px"><input type="checkbox" data-bl-revcfg ${revisar()?'checked':''} ${canEditPage()?'':'disabled'}><span><b>Revisión institucional previa</b><small>Si se activa, cada recomendación nueva la aprueba la Bolsa Laboral antes de llegar a la persona.${canEditPage()?'':' La modifican el administrador o Atención al ciudadano.'}</small></span></label>`;
+ // El administrador puede retirarlas (por ejemplo, para eliminar después una oferta, un alumno o un docente).
+ const actions=r=>[r.estado==='En revisión'&&review?`<button type="button" class="btn xs" data-bl-aok="${r.id}">Aprobar</button> <button type="button" class="btn xs ghost" data-bl-ano="${r.id}">No aprobar</button>`:'',admin?`<button type="button" class="btn xs ghost" data-bl-adel="${r.id}">Retirar</button>`:''].filter(Boolean).join('<br>');
+ return `<div class="panel" style="margin-top:16px" data-bl-admrecs><h2><span>Recomendaciones de docentes (${rows.length})</span></h2><div class="pb">${toggle}${stats}${rows.length?recsTable(rows,true,actions):'<p class="note">Los docentes recomiendan a sus estudiantes y egresados desde su ingreso a la Bolsa Laboral. La persona decide si acepta; la empresa solo ve las aceptadas.</p>'}</div></div>`;
 }
 function bindAdminRecs(){
- document.querySelectorAll('[data-bl-adel]').forEach(b=>b.onclick=async()=>{const list=D().recomendaciones;const r=list.find(x=>x.id===+b.dataset.blAdel);if(!r)return;
-  if(!await confirmBox('¿Retirar esta recomendación? La empresa y el docente dejarán de verla.',{ok:'Retirar'}))return;
-  const i=list.indexOf(r);list.splice(i,1);IX.logAct('Retirar recomendación','Bolsa laboral',`Oferta ${r.of} · persona ${r.est}`);if(IX.persist()){toast('Recomendación retirada.','ok');route();}else list.splice(i,0,r);});
+ const list=()=>D().recomendaciones;const find=id=>list().find(x=>x.id===+id);
+ const tog=document.querySelector('[data-bl-revcfg]');if(tog)tog.onchange=()=>{const c=window.pzBolsaCfg();const prev=c.revisarRecomendaciones;c.revisarRecomendaciones=tog.checked;audit('Configuración','Bolsa laboral',`Revisión previa de recomendaciones: ${tog.checked?'activada':'desactivada'}`);if(saveDB()){toast(tog.checked?'Las recomendaciones nuevas pasarán por revisión.':'Las recomendaciones nuevas llegarán directo a la persona.','ok');route();}else{c.revisarRecomendaciones=prev;tog.checked=!!prev;}};
+ const decide=async(r,ok)=>{
+  let obs='';
+  if(!ok){const m=modal({title:'No aprobar recomendación',size:'sm',body:`<form class="bl-lg" data-bl-obs novalidate><div class="field"><label for="bl-obs">Motivo para el docente</label><textarea id="bl-obs" rows="3" maxlength="300" required></textarea></div><p class="bl-lg-err" data-bl-err role="alert"></p><div class="bl-lg-a"><button class="btn" type="submit">No aprobar</button></div></form>`});
+   obs=await new Promise(res=>{const f=m.el.querySelector('[data-bl-obs]');f.onsubmit=ev=>{ev.preventDefault();const v=f.querySelector('textarea').value.trim();if(v.length<5){f.querySelector('[data-bl-err]').textContent='Indica el motivo (al menos 5 caracteres).';return;}m.close();res(v);};});}
+  const prev={...r};Object.assign(r,{estado:ok?'Pendiente':'No aprobada',fechaRev:hoy()},ok?{}:{obs});
+  IX.logAct(ok?'Aprobar recomendación':'No aprobar recomendación','Bolsa laboral',`Oferta ${r.of} · persona ${r.est}`);
+  if(IX.persist()){toast(ok?'Recomendación aprobada: la persona ya puede responder.':'Recomendación no aprobada. Se avisó al docente.','ok');route();}else{for(const k of Object.keys(r))delete r[k];Object.assign(r,prev);}
+ };
+ document.querySelectorAll('[data-bl-aok]').forEach(b=>b.onclick=()=>{const r=find(b.dataset.blAok);if(r)decide(r,true);});
+ document.querySelectorAll('[data-bl-ano]').forEach(b=>b.onclick=()=>{const r=find(b.dataset.blAno);if(r)decide(r,false);});
+ document.querySelectorAll('[data-bl-adel]').forEach(b=>b.onclick=async()=>{const r=find(b.dataset.blAdel);if(!r)return;
+  if(!await confirmBox('¿Retirar esta recomendación? La persona, la empresa y el docente dejarán de verla.',{ok:'Retirar'}))return;
+  const l=list();const i=l.indexOf(r);l.splice(i,1);IX.logAct('Retirar recomendación','Bolsa laboral',`Oferta ${r.of} · persona ${r.est}`);if(IX.persist()){toast('Recomendación retirada.','ok');route();}else l.splice(i,0,r);});
 }
 
 /* ---------- Carga masiva por Excel: empresas y ofertas ---------- */

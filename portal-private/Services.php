@@ -34,6 +34,7 @@ final class PortalServices
         $bolsa=$new['config']['bolsa']??[];
         if(!PortalPolicy::equal($old['config']['bolsa']??null,$bolsa)){
             if(isset($bolsa['diseno'])&&!in_array($bolsa['diseno'],['actual','perfiles'],true))throw new PortalError(422,'Diseño de la Bolsa Laboral no válido.');
+            if(isset($bolsa['revisarRecomendaciones'])&&!is_bool($bolsa['revisarRecomendaciones']))throw new PortalError(422,'La revisión de recomendaciones debe activarse o desactivarse.');
             if(isset($bolsa['titulo'])&&(!is_string($bolsa['titulo'])||preg_match_all('/./us',$bolsa['titulo'])>120))throw new PortalError(422,'El título de la Bolsa Laboral admite hasta 120 caracteres.');
             if(isset($bolsa['perfiles'])){
                 if(!is_array($bolsa['perfiles'])||array_diff(array_keys($bolsa['perfiles']),['estudiante','docente','administrador','empresa']))throw new PortalError(422,'Perfiles de la Bolsa Laboral no válidos.');
