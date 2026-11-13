@@ -33,9 +33,9 @@ async function readSheet(file){
 }
 
 const PERFILES=[
- {k:'estudiante',label:'Estudiante/Egresado',icon:'grad',text:'Postula a las ofertas con tu DNI y tu CV.',user:'DNI',hint:'Tu DNI y tu contraseña (la que creaste al registrarte o la que te entregó Secretaría Académica).'},
- {k:'administrador',label:'Administrador',icon:'gear',text:'Gestiona ofertas, empresas, postulaciones y cargas masivas.',user:'Usuario',hint:'Tu usuario del personal del instituto.'},
- {k:'empresa',label:'Empresa',icon:'building',text:'Publica convocatorias y revisa a tus postulantes.',user:'RUC',hint:'El RUC y la contraseña con que registraste tu empresa.'}];
+ {k:'estudiante',label:'Estudiante/Egresado',icon:'grad',btn:'Ingresar con DNI',tag:'Postula aquí',text:'Postula a las ofertas con tu DNI y tu CV.',user:'DNI',hint:'Tu DNI y tu contraseña (la que creaste al registrarte o la que te entregó Secretaría Académica).'},
+ {k:'administrador',label:'Administrador',icon:'gear',btn:'Ingresar',tag:'Personal del instituto',text:'Gestiona ofertas, empresas, postulaciones y cargas masivas.',user:'Usuario',hint:'Tu usuario del personal del instituto.'},
+ {k:'empresa',label:'Empresa',icon:'building',btn:'Ingresar con RUC',tag:'Registro gratuito',text:'Publica convocatorias y revisa a tus postulantes.',user:'RUC',hint:'El RUC y la contraseña con que registraste tu empresa.'}];
 const TITULO_DEF='Bienvenido a la Bolsa Laboral';
 const PF=k=>PERFILES.find(p=>p.k===k);
 // Copia de lectura: no se modifica la configuración al abrir la página (el servidor completa los valores que falten).
@@ -48,8 +48,9 @@ const D=()=>XD();
 function cardsHTML(){
  const c=cfg();
  return `<section class="bl-pf" aria-labelledby="bl-pf-t"><h2 id="bl-pf-t" class="bl-pf-t">${esc(c.titulo||TITULO_DEF)}</h2><p class="bl-pf-s">Elige tu perfil para ingresar a la Bolsa Laboral de ${esc(inst().nombreCorto||inst().nombre)}.</p>
- <div class="bl-pf-g">${PERFILES.map(p=>{const f=fotoDe(p.k);return `<article class="bl-pf-c" data-bl-card="${p.k}"><div class="bl-pf-i">${f?`<img src="${esc(img(f))}" alt="" loading="lazy" decoding="async">`:`<span class="bl-pf-ic" aria-hidden="true">${sic(p.icon,64)}</span>`}</div>
-  <div class="bl-pf-b"><button type="button" class="bl-pf-btn" data-bl-perfil="${p.k}">${sic(p.icon,18)}<span>${esc(p.label)}</span></button><p>${esc(p.text)}</p></div></article>`;}).join('')}</div></section>`;
+ <div class="bl-pf-g">${PERFILES.map(p=>{const f=fotoDe(p.k);return `<article class="bl-pf-c${f?'':' no-foto'}" data-bl-card="${p.k}"><div class="bl-pf-i">${f?`<img src="${esc(img(f))}" alt="" loading="lazy" decoding="async">`:`<span class="bl-pf-ic" aria-hidden="true">${sic(p.icon,64)}</span>`}</div>
+  <span class="bl-pf-tag">${sic(p.icon,13)} ${esc(p.tag)}</span>
+  <div class="bl-pf-b"><h3>${esc(p.label)}</h3><p>${esc(p.text)}</p><button type="button" class="bl-pf-btn" data-bl-perfil="${p.k}" aria-label="${esc(p.label)}: ${esc(p.btn)}">${sic('key',16)}<span>${esc(p.btn)}</span></button></div></article>`;}).join('')}</div></section>`;
 }
 function loginModal(k){
  const p=PF(k);if(!p)return;
