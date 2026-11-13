@@ -4,7 +4,7 @@ require_once __DIR__.'/Content.php';
 
 final class PortalSchema
 {
-    public const VERSION = 8;
+    public const VERSION = 9;
     public static function apply(PDO $db): void
     {
         foreach (explode(';', file_get_contents(__DIR__.'/schema.sql')) as $sql) if (trim($sql) !== '') $db->exec($sql);

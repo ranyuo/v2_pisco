@@ -1128,7 +1128,7 @@ loginView = function () {
     <div class="field"><label for="lg-p">Contraseña</label><div class="pz-in">${ic('lock')}<input id="lg-p" name="p" type="password" autocomplete="current-password" placeholder="••••••••" required><button type="button" data-eye aria-label="Mostrar contraseña" aria-pressed="false">${ic('eye')}</button></div></div>
     <div id="lg-e" role="alert"></div>
     <button class="pz-lg-btn" type="submit">${ic('key')} Ingresar</button>
-    <p class="pz-lg-warn">${ic('alert')}<span>Por seguridad, tras 5 intentos fallidos la cuenta se bloquea 5 minutos. ¿Olvidó su contraseña? Solicítela al administrador del sistema.</span></p>
+    <p class="pz-lg-warn">${ic('alert')}<span>Por seguridad, tras 5 intentos fallidos la cuenta se bloquea 5 minutos. ¿Olvidaste tu contraseña? <a href="#" data-pw-reset>Restablécela con un código a tu correo</a>.</span></p>
    </form></div>
    <details class="pz-lg-demo"${window.innerWidth > 760 ? ' open' : ''}><summary><span class="pz-lg-di">${ic('users')}</span><span><b>Usuarios de demostración</b><small>Elija un perfil y presione «Ingresar». Se completan el usuario y la contraseña.</small></span><i aria-hidden="true">▾</i></summary>
     ${grupos.map(([g, us]) => `<div class="pz-lg-g"><h3>${esc(g)}</h3><div class="pz-lg-grid">${us.map(([u, l, icn]) => `<button type="button" class="pz-du" data-du="${esc(u)}|${esc(demoPass(u))}"><i>${ic(icn)}</i><span><b>${esc(l)}</b><small>${esc(u)}</small></span></button>`).join('')}</div></div>`).join('')}

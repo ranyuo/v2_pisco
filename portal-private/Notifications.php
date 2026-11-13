@@ -9,7 +9,8 @@ final class PortalNotifications
     private static function emit(PDO $db,string $module,array $row,string $event,string $version,array $recipients,string $reference,string $subject,string $body): void
     {
         foreach(array_unique(array_map(fn($s)=>strtolower(trim((string)$s)),$recipients)) as $to){
-            if($to===''||strlen($to)>254||!filter_var($to,FILTER_VALIDATE_EMAIL))continue;
+            // Las cuentas sin correo real usan «usuario@portal.invalid»: no se les envía nada.
+            if($to===''||strlen($to)>254||!filter_var($to,FILTER_VALIDATE_EMAIL)||str_ends_with($to,'@portal.invalid'))continue;
             PortalMail::queue($db,$module,(string)$row['id'],$event,$version,$to,$reference,$subject,$body,self::identity($module,$row));
             self::$queued++;
         }
@@ -109,8 +110,8 @@ final class PortalNotifications
     public static function exists(array $data,array $mail): bool
     {
         $module=$mail['source_type']??'expedientes';$id=($mail['source_id']??'')?:($mail['record_id']??'');
-        // Registro de egresados: las solicitudes viven fuera del estado del portal (tabla pisco_graduate_requests).
-        if($module==='egresados')return true;
+        // Registro de egresados y recuperación de contraseñas: viven fuera del estado del portal (tablas propias).
+        if($module==='egresados'||$module==='cuentas')return true;
         if(!in_array($module,['expedientes','reclamos','empresas','ofertas','postulaciones'],true))return false;
         $rows=in_array($module,['expedientes','reclamos'],true)?($data[$module]??[]):($data['academico'][$module]??[]);
         $row=PortalPolicy::find($rows,'id',$id);if($row===null||($row['deleted']??false))return false;

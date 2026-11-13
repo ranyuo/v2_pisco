@@ -24,6 +24,9 @@ try {
         // Cerrar sesión no necesita un cuerpo JSON; la protección CSRF ya se comprobó.
         if ($route === 'api/session' && $method === 'DELETE') portal_json($app->logout());
         $input = $method === 'GET' ? [] : $app->input();
+        // Recuperar la contraseña no requiere sesión.
+        if ($route === 'api/clave/codigo' && $method === 'POST') portal_json($app->requestPasswordReset($input));
+        if ($route === 'api/clave/restablecer' && $method === 'POST') portal_json($app->resetPassword($input));
         // Con una contraseña temporal solo se permite cargar el portal, cambiarla o cerrar sesión.
         if (!in_array($route, ['api/portal', 'api/password', 'api/session', 'api/visitas', 'api/eventos'], true) || ($route === 'api/portal' && $method !== 'GET')) {
             if (!empty($app->user()['cambiarClave'])) throw new PortalError(403, 'Cambia tu contraseña temporal antes de continuar.');
@@ -64,6 +67,8 @@ try {
     if($publicService)$bootstrap['standaloneService']=$publicService;
     header('Content-Type: text/html; charset=utf-8');
     require dirname(__DIR__).'/portal-private/views/portal.php';
+    // Tareas posteriores a la respuesta (p. ej. cerrar ofertas vencidas detectadas al cargar la página).
+    portal_finish_deferred();
 } catch (Throwable $error) {
     portal_error($error, $route !== '');
 }

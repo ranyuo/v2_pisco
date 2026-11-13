@@ -64,6 +64,7 @@ function loginModal(k){
   <div class="field"><label for="bl-u">${esc(p.user)}</label><input id="bl-u" name="username" required maxlength="80" autocomplete="username" ${p.user==='DNI'?'inputmode="numeric"':p.user==='RUC'?'inputmode="numeric"':''}></div>
   <div class="field"><label for="bl-p">Contraseña</label><input id="bl-p" name="password" type="password" required maxlength="72" autocomplete="current-password"></div>
   <p class="bl-lg-err" data-bl-err role="alert"></p>
+  <p class="note" style="margin:0"><a href="#" data-pw-reset>¿Olvidaste tu contraseña?</a></p>
   <div class="bl-lg-a"><button class="btn" type="submit">${sic('key',16)} Ingresar</button>${k==='empresa'?'<button type="button" class="btn ghost" data-bl-reg>Registrar mi empresa</button>':''}${k==='estudiante'&&window.pzRegistroEgresado?'<button type="button" class="btn ghost" data-egr-open="registro">Soy egresado: registrarme</button>':''}</div></form>`,size:'sm'});
  const form=m.el.querySelector('[data-bl-login]'),err=m.el.querySelector('[data-bl-err]');
  const reg=m.el.querySelector('[data-bl-reg]');if(reg)reg.onclick=()=>{m.close();const b=document.querySelector('.pz-mt [data-tab="e"]');if(b){b.click();b.scrollIntoView({behavior:'smooth',block:'start'});}};

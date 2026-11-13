@@ -28,10 +28,11 @@ require_once __DIR__.'/Notifications.php';
 require_once __DIR__.'/SmtpSettings.php';
 require_once __DIR__.'/DocumentLookup.php';
 require_once __DIR__.'/Graduates.php';
+require_once __DIR__.'/Recovery.php';
 
 final class PortalApp
 {
-    use PortalAccounts, PortalForms, PortalGraduates;
+    use PortalAccounts, PortalForms, PortalGraduates, PortalRecovery;
     private const PUBLIC_COLLECTIONS = ['__v', 'config', 'slides', 'enlaces', 'paginas', 'reconocimientos',
         'programas', 'personas', 'jerarquica', 'egresados', 'categoriasNoticia', 'noticias', 'eventos',
         'tiposDocumento', 'documentos', 'tupa', 'tupaDocs', 'estadisticas', 'licenciamiento', 'inversiones',
@@ -189,6 +190,8 @@ final class PortalApp
     public function bootstrap(): array
     {
         $state=$this->state();$full=json_decode($state['data'],true,flags:JSON_THROW_ON_ERROR);$user=$this->user();
+        // Respaldo sin cron: si hay ofertas vencidas, se cierran después de responder (la página ya no las muestra como vigentes).
+        if(self::expiredOffers($full))portal_defer(function(){try{$this->closeExpiredOffers();}catch(Throwable){}});
         $full['visitas']=$this->visitCounts();
         $data=PortalPolicy::project($full,$user,$this->publicData($full));
         $data['usuarios']=$this->visibleAccounts($user,$full);
