@@ -27,10 +27,11 @@ require_once __DIR__.'/Mail.php';
 require_once __DIR__.'/Notifications.php';
 require_once __DIR__.'/SmtpSettings.php';
 require_once __DIR__.'/DocumentLookup.php';
+require_once __DIR__.'/Graduates.php';
 
 final class PortalApp
 {
-    use PortalAccounts, PortalForms;
+    use PortalAccounts, PortalForms, PortalGraduates;
     private const PUBLIC_COLLECTIONS = ['__v', 'config', 'slides', 'enlaces', 'paginas', 'reconocimientos',
         'programas', 'personas', 'jerarquica', 'egresados', 'categoriasNoticia', 'noticias', 'eventos',
         'tiposDocumento', 'documentos', 'tupa', 'tupaDocs', 'estadisticas', 'licenciamiento', 'inversiones',

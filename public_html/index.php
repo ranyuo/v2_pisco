@@ -33,6 +33,12 @@ try {
         if ($route === 'api/cuentas' && $method === 'POST') portal_json($app->accountOperation($input));
         if ($route === 'api/password' && $method === 'POST') { $app->changePassword($input); portal_json(['ok'=>true]); }
         if ($route === 'api/empresas' && $method === 'POST') portal_json($app->registerCompany($input),201);
+        // Registro en línea de egresados (Bolsa Laboral): registro, código de verificación y revisión del personal.
+        if ($route === 'api/egresados/registro' && $method === 'POST') portal_json($app->registerGraduate($input),201);
+        if ($route === 'api/egresados/codigo' && $method === 'POST') portal_json($app->resendGraduateCode($input));
+        if ($route === 'api/egresados/verificar' && $method === 'POST') portal_json($app->verifyGraduate($input));
+        if ($route === 'api/egresados/solicitudes' && $method === 'GET') portal_json($app->graduateRequests());
+        if ($route === 'api/egresados/solicitudes' && $method === 'POST') portal_json($app->decideGraduate($input));
         if ($route === 'api/visitas' && $method === 'POST') portal_json($app->track($input));
         if ($route === 'api/portal' && $method === 'GET') portal_json($app->bootstrap());
         if ($route === 'api/notificaciones' && $method === 'GET') portal_json($app->mailStatus());

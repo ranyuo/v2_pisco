@@ -33,7 +33,7 @@ async function readSheet(file){
 }
 
 const PERFILES=[
- {k:'estudiante',label:'Estudiante/Egresado',icon:'grad',text:'Postula a las ofertas con tu DNI y tu CV.',user:'DNI',hint:'Tu DNI y la contraseña que te entregó Secretaría Académica.'},
+ {k:'estudiante',label:'Estudiante/Egresado',icon:'grad',text:'Postula a las ofertas con tu DNI y tu CV.',user:'DNI',hint:'Tu DNI y tu contraseña (la que creaste al registrarte o la que te entregó Secretaría Académica).'},
  {k:'administrador',label:'Administrador',icon:'gear',text:'Gestiona ofertas, empresas, postulaciones y cargas masivas.',user:'Usuario',hint:'Tu usuario del personal del instituto.'},
  {k:'empresa',label:'Empresa',icon:'building',text:'Publica convocatorias y revisa a tus postulantes.',user:'RUC',hint:'El RUC y la contraseña con que registraste tu empresa.'}];
 const TITULO_DEF='Bienvenido a la Bolsa Laboral';
@@ -63,7 +63,7 @@ function loginModal(k){
   <div class="field"><label for="bl-u">${esc(p.user)}</label><input id="bl-u" name="username" required maxlength="80" autocomplete="username" ${p.user==='DNI'?'inputmode="numeric"':p.user==='RUC'?'inputmode="numeric"':''}></div>
   <div class="field"><label for="bl-p">Contraseña</label><input id="bl-p" name="password" type="password" required maxlength="72" autocomplete="current-password"></div>
   <p class="bl-lg-err" data-bl-err role="alert"></p>
-  <div class="bl-lg-a"><button class="btn" type="submit">${sic('key',16)} Ingresar</button>${k==='empresa'?'<button type="button" class="btn ghost" data-bl-reg>Registrar mi empresa</button>':''}</div></form>`,size:'sm'});
+  <div class="bl-lg-a"><button class="btn" type="submit">${sic('key',16)} Ingresar</button>${k==='empresa'?'<button type="button" class="btn ghost" data-bl-reg>Registrar mi empresa</button>':''}${k==='estudiante'&&window.pzRegistroEgresado?'<button type="button" class="btn ghost" data-egr-open="registro">Soy egresado: registrarme</button>':''}</div></form>`,size:'sm'});
  const form=m.el.querySelector('[data-bl-login]'),err=m.el.querySelector('[data-bl-err]');
  const reg=m.el.querySelector('[data-bl-reg]');if(reg)reg.onclick=()=>{m.close();const b=document.querySelector('.pz-mt [data-tab="e"]');if(b){b.click();b.scrollIntoView({behavior:'smooth',block:'start'});}};
  form.onsubmit=async ev=>{
@@ -97,7 +97,7 @@ R('servicios/bolsa-laboral',(...args)=>{
 });
 
 /* ---------- Intranet: pestañas adicionales de la Bolsa Laboral ---------- */
-const TAB_LIST=[['p','Panel','#/admin/ix-bolsa'],['g','Convocatorias y postulaciones','#/admin/ix-bolsa/gestion'],['e','Validación de empresas','#/admin/ix-bolsa/empresas'],['r','Padrón de estudiantes y egresados','#/admin/ix-bolsa/padron'],['s','Seguimiento de egresados','#/admin/ix-bolsa/egresados'],['c','Carga masiva','#/admin/ix-bolsa/carga'],['w','Página pública','#/admin/ix-bolsa/pagina']];
+const TAB_LIST=[['p','Panel','#/admin/ix-bolsa'],['g','Convocatorias y postulaciones','#/admin/ix-bolsa/gestion'],['e','Validación de empresas','#/admin/ix-bolsa/empresas'],['r','Padrón de estudiantes y egresados','#/admin/ix-bolsa/padron'],['s','Seguimiento de egresados','#/admin/ix-bolsa/egresados'],['c','Carga masiva','#/admin/ix-bolsa/carga'],['x','Registro de egresados','#/admin/ix-bolsa/registros'],['w','Página pública','#/admin/ix-bolsa/pagina']];
 const myTabs=a=>tabsBar(TAB_LIST,a);
 function withTabs(out,active){
  const res=typeof out==='string'?{html:out}:out;if(!res||typeof res.html!=='string')return out;
@@ -113,6 +113,7 @@ CUSTOM['ix-bolsa']=(parts,q)=>{
  if(isCommunity()||!IX||!IX.db)return baseCustom(parts,q);
  const t=parts[2]||'';
  if(t==='pagina')return paginaPublica();
+ if(t==='registros'&&window.pzEgresadosPanel)return window.pzEgresadosPanel(bHead('Solicitudes de registro en línea de egresados','Registro de egresados')+myTabs('x'));
  if(t==='carga')return cargaMasiva(q);
  return withTabs(baseCustom(parts,q),{'':'p',gestion:'g',empresas:'e',padron:'r',egresados:'s'}[t]||'p');
 };

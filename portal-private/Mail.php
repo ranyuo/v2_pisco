@@ -40,7 +40,8 @@ final class PortalMail
         $batch=hash('sha256',$module.'|'.$sourceId);
         $id=hash('sha256',$batch.'|'.$sourceKey.'|'.$event.'|'.$version.'|'.$to);
         $insert=$db->prepare('INSERT INTO pisco_mail (id,record_id,source_type,source_id,source_key,event,reference,recipient,subject,body,created_at,next_attempt_at) VALUES (?,?,?,?,?,?,?,?,?,?,UTC_TIMESTAMP(6),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE id=id');
-        $insert->execute([$id,$batch,$module,$sourceId,$sourceKey,$event,$reference,$to,$subject,'Evento registrado: '.date(DATE_ATOM)."\n".$body]);
+        // Los correos a egresados son personales: sin la línea técnica de registro del evento.
+        $insert->execute([$id,$batch,$module,$sourceId,$sourceKey,$event,$reference,$to,$subject,($module==='egresados'?'':'Evento registrado: '.date(DATE_ATOM)."\n").$body]);
     }
 
     /** No se incluyen credenciales ni cuerpos de correos en el panel. */

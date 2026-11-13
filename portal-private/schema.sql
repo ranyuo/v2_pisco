@@ -80,3 +80,24 @@ CREATE TABLE IF NOT EXISTS pisco_mail (
     sent_at DATETIME NULL,
     INDEX (status,next_attempt_at), INDEX (record_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS pisco_graduate_requests (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    dni CHAR(8) NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    email VARCHAR(254) NOT NULL,
+    phone VARCHAR(15) NOT NULL,
+    program_id INT NOT NULL,
+    grad_year SMALLINT UNSIGNED NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    code_hash CHAR(64) NULL,
+    code_expires DATETIME NULL,
+    code_attempts INT UNSIGNED NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'Por verificar',
+    student_id BIGINT UNSIGNED NULL,
+    reason VARCHAR(300) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    verified_at DATETIME NULL,
+    decided_at DATETIME NULL,
+    decided_by VARCHAR(80) NULL,
+    INDEX (dni,status), INDEX (status,created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

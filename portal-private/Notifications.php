@@ -109,6 +109,8 @@ final class PortalNotifications
     public static function exists(array $data,array $mail): bool
     {
         $module=$mail['source_type']??'expedientes';$id=($mail['source_id']??'')?:($mail['record_id']??'');
+        // Registro de egresados: las solicitudes viven fuera del estado del portal (tabla pisco_graduate_requests).
+        if($module==='egresados')return true;
         if(!in_array($module,['expedientes','reclamos','empresas','ofertas','postulaciones'],true))return false;
         $rows=in_array($module,['expedientes','reclamos'],true)?($data[$module]??[]):($data['academico'][$module]??[]);
         $row=PortalPolicy::find($rows,'id',$id);if($row===null||($row['deleted']??false))return false;
