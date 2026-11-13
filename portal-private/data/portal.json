@@ -314,9 +314,6 @@
         "estudiante": {
           "img": "/assets/pisco/61bb9596fb5d64aed927.jpg"
         },
-        "docente": {
-          "img": "/assets/pisco/de34463342d2487ca974.jpg"
-        },
         "administrador": {
           "img": "/assets/pisco/00a26292e570a9145c29.jpg"
         },
@@ -7217,8 +7214,7 @@
       "enf": 6,
       "pa": 8,
       "ashr": 9
-    },
-    "recomendaciones": []
+    }
   },
   "correos": [],
   "suscriptores": []

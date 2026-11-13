@@ -302,8 +302,8 @@ final class PortalApp
     }
 
     /** Perfiles de ingreso de la portada de la Bolsa Laboral: cada tarjeta admite solo sus tipos de cuenta. */
-    public const LOGIN_PROFILES=['estudiante'=>['estudiante','egresado'],'docente'=>['docente'],'empresa'=>['empresa'],'administrador'=>null];
-    private const LOGIN_PROFILE_LABELS=['estudiante'=>'Estudiante/Egresado','docente'=>'Docente','empresa'=>'Empresa','administrador'=>'Administrador'];
+    public const LOGIN_PROFILES=['estudiante'=>['estudiante','egresado'],'empresa'=>['empresa'],'administrador'=>null];
+    private const LOGIN_PROFILE_LABELS=['estudiante'=>'Estudiante/Egresado','empresa'=>'Empresa','administrador'=>'Administrador'];
 
     public function login(array $input): array
     {
