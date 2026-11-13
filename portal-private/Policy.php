@@ -42,7 +42,7 @@ final class PortalPolicy
         $base=self::defaults()['roles'];
         foreach($roles as $key=>$role){
             if($key==='admin'||!isset($base[$key])||!is_array($role)||array_diff(array_keys($role),['label','mods'])||!is_string($role['label']??null)||trim($role['label'])===''||strlen($role['label'])>100||!preg_match('/^[\p{L}\p{N} ._,()\/-]+$/u',$role['label'])||!is_array($role['mods']??null)||!array_is_list($role['mods']))throw new PortalError(422,'Configuración de roles no válida.');
-            foreach($role['mods'] as $mod)if(!is_string($mod)||!in_array($mod,$base[$key]['mods'],true))throw new PortalError(422,'Permiso fuera del ámbito del rol.');
+            foreach($role['mods'] as $mod)if(!is_string($mod)||!in_array($mod,IntranetScope::MODULES,true)||!in_array($mod,$base[$key]['mods'],true))throw new PortalError(422,'Permiso fuera del ámbito del rol.');
             if(!in_array('dashboard',$role['mods'],true))throw new PortalError(422,'El inicio del panel debe permanecer habilitado.');
         }
     }
@@ -56,6 +56,8 @@ final class PortalPolicy
         foreach(self::$roleOverrides as $key=>$role)if($key!=='admin'&&isset($base['roles'][$key]))$base['roles'][$key]=array_replace($base['roles'][$key],$role);
         foreach($base['specs'] as &$spec)if($spec['collection']==='certificados')foreach($spec['fields'] as &$field)if($field['name']==='programaId'){$field['required']=false;$field['publishRequired']=false;}
         unset($spec,$field);
+        // Intranet: solo módulos de gestión (la web institucional se administra por separado).
+        $base['roles']=IntranetScope::roles($base['roles']);
         // El docente no participa en la Bolsa Laboral (aunque una configuración anterior de roles lo incluya).
         $base['roles']['docente']['mods']=array_values(array_diff($base['roles']['docente']['mods']??[],['ix-bolsa']));
         return $base;
@@ -70,7 +72,7 @@ final class PortalPolicy
     public static function role(array $user): string { return $user['rol'] ?? 'publico'; }
     public static function can(array $user, string $module): bool
     {
-        return self::role($user)==='admin' || in_array($module,self::definitions()['roles'][self::role($user)]['mods']??[],true);
+        return in_array($module,IntranetScope::MODULES,true) && (self::role($user)==='admin' || in_array($module,self::definitions()['roles'][self::role($user)]['mods']??[],true));
     }
     public static function level(array $data, array $user, string $module): int
     {

@@ -1,5 +1,5 @@
-/* Servicios públicos con enlace propio (/mesa-de-partes.php, /libro-de-reclamaciones.php, /bolsa-laboral.php y
-   /certificados.php): comparten la API y los datos, sin la navegación del portal ni de la intranet.
+/* Servicios públicos con enlace propio (/mesa-de-partes.php, /libro-de-reclamaciones.php, /bolsa-laboral.php,
+   /certificados.php, /horarios.php y /cv-docente.php): comparten la API y los datos, sin la navegación del portal ni de la intranet.
    En el portal principal (/) no se modifica nada. */
 'use strict';
 (function(){
@@ -8,7 +8,9 @@ const PUBLIC_SERVICE_PAGES={
  'servicios/mesa-de-partes':{title:'Mesa de partes virtual',entry:'/mesa-de-partes.php',accent:'#b94313'},
  'servicios/libro-de-reclamaciones':{title:'Libro de reclamaciones',entry:'/libro-de-reclamaciones.php',accent:'#a62d3a'},
  'servicios/bolsa-laboral':{title:'Bolsa laboral',entry:'/bolsa-laboral.php',accent:'#167568'},
- 'servicios/consulta-certificados':{title:'Consulta de documentos',entry:'/certificados.php',accent:'#245487'}
+ 'servicios/consulta-certificados':{title:'Consulta de documentos',entry:'/certificados.php',accent:'#245487'},
+ 'servicios/horarios':{title:'Horarios',entry:'/horarios.php',accent:'#5b3fa0'},
+ 'servicios/cv-docente':{title:'CV docente',entry:'/cv-docente.php',accent:'#1d6b8f'}
 };
 const PUBLIC_SERVICE_ALIASES={'libro-de-reclamaciones':'servicios/libro-de-reclamaciones','transparencia/libro-de-reclamaciones':'servicios/libro-de-reclamaciones'};
 function publicServicePath(){

@@ -48,8 +48,8 @@ $bad=$grade;$bad['periodo']='periodo-invalido';$revision=$app->bootstrap()['revi
 $duplicate=$grade;$duplicate['id']=2;$duplicate['ud']='  MATEMATICA   APLICADA  ';rejects(fn()=>saveRows($app,'notas',[$grade,$duplicate]),422,'Normalized duplicate grade rejected');
 $other=$grade;$other['id']=2;$other['periodo']='2025-I';saveRows($app,'notas',[$grade,$other]);verify(count($app->bootstrap()['data']['academico']['notas'])===2,'Same course in a different historical period accepted');
 $grade['nota']=16;saveRows($app,'notas',[$grade,$other]);verify($app->bootstrap()['data']['academico']['notas'][0]['nota']===16,'Existing grade can be corrected');
-$s=$app->bootstrap();$app->save(['revision'=>$s['revision'],'patch'=>[['path'=>['config'],'kind'=>'object','changes'=>[['key'=>'diseno','before'=>$s['data']['config']['diseno'],'after'=>'editorial']]]]]);
-verify($app->bootstrap()['data']['config']['diseno']==='editorial','Editorial layout can be saved');
+// Intranet: el diseño de la web institucional no se administra aquí (se rechaza incluso al administrador).
+$s=$app->bootstrap();rejects(fn()=>$app->save(['revision'=>$s['revision'],'patch'=>[['path'=>['config'],'kind'=>'object','changes'=>[['key'=>'diseno','before'=>$s['data']['config']['diseno'],'after'=>'editorial']]]]]),403,'Website layout setting rejected by the intranet');
 // Exercise the real SQL export, then import it in another empty database.
 $app->db()->exec("INSERT INTO pisco_mail (id,record_id,reference,recipient,subject,body) VALUES (REPEAT('a',64),'qa','QA','qa@example.test','QA','QA')");
 $_SERVER['REQUEST_METHOD']='POST';$_POST=['_csrf'=>$_SESSION['csrf']];ob_start();require dirname(__DIR__).'/public_html/backup.php';$sql=ob_get_clean();

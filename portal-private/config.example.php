@@ -9,6 +9,8 @@ return [
     'install_key' => '',
     'secure_cookies' => true, // HTTPS en Hostinger. Usa false únicamente para pruebas locales HTTP.
     'timezone' => 'America/Lima',
+    // Dirección de la web institucional (se administra aparte); la intranet la enlaza desde su cabecera y su pie.
+    'website_url' => 'https://iestppisco.edu.pe/',
     // Meses de auditoría que se conservan (mínimo 6). 0 la conserva sin límite. La depuran a diario cron.php y mail-worker.php.
     'audit_retention_months' => 24,
     // Alternativa al formulario Configuración → Configurar correo notificador (SMTP).

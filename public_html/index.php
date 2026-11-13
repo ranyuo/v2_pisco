@@ -10,6 +10,8 @@ try {
         '/libro-de-reclamaciones.php'=>'servicios/libro-de-reclamaciones',
         '/bolsa-laboral.php'=>'servicios/bolsa-laboral',
         '/certificados.php'=>'servicios/consulta-certificados',
+        '/horarios.php'=>'servicios/horarios',
+        '/cv-docente.php'=>'servicios/cv-docente',
     ];
     $publicService = defined('PORTAL_PUBLIC_SERVICE') ? PORTAL_PUBLIC_SERVICE : null;
     if (!in_array($path, ['/', '/index.php'], true) && (!$publicService || ($serviceEntries[$path]??null)!==$publicService)) throw new PortalError(404, 'Página no encontrada.');

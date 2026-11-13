@@ -17,11 +17,11 @@ try {
     if(!$exception instanceof PortalError||!in_array($exception->status,[409,422],true))portal_error($exception);
     http_response_code($exception->status);$error=$exception->getMessage();
 }
-$overrides=$app->roleSettings();$definitions=PortalPolicy::defaults();$roles=PortalPolicy::definitions()['roles'];
-$key=is_string($_GET['role']??null)?$_GET['role']:'imagen';if(isset($input['role'])&&is_string($input['role']))$key=$input['role'];
-if(!isset($roles[$key]))$key='imagen';$role=$roles[$key];$protected=$key==='admin';
+$overrides=$app->roleSettings();$definitions=PortalPolicy::defaults();$definitions['roles']=IntranetScope::roles($definitions['roles']);$roles=PortalPolicy::definitions()['roles'];
+$key=is_string($_GET['role']??null)?$_GET['role']:'secretaria';if(isset($input['role'])&&is_string($input['role']))$key=$input['role'];
+if(!isset($roles[$key]))$key='secretaria';$role=$roles[$key];$protected=$key==='admin';
 function e(string $v):string{return htmlspecialchars($v,ENT_QUOTES,'UTF-8');}
-?><!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Roles y permisos | Portal Pisco</title><link rel="stylesheet" href="/forms.css"><style>
+?><!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Roles y permisos | Intranet Pisco</title><link rel="stylesheet" href="/forms.css"><style>
 body{background:#f2f6fb;color:#102447}main{max-width:1050px;margin:auto;padding:24px}nav{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}nav a{padding:10px;border:1px solid #ccd6e5;border-radius:8px;background:white;text-decoration:none}nav a[aria-current]{background:#102447;color:white}.modules{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}.modules label{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #ccd6e5;border-radius:8px;margin:0}.modules input{width:20px;height:20px;flex:0 0 20px}.tools{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}button.secondary{background:#fff;color:#102447;border:1px solid #ccd6e5}fieldset{border:0;padding:0;min-width:0}legend{font-weight:bold;margin-bottom:16px}section{background:white;border:1px solid #d3dce8;border-radius:14px;padding:24px}input[type=text]{box-sizing:border-box;width:100%}
 </style></head><body><main><a href="/#/admin/usuarios">← Volver a Usuarios y roles</a><h1>Roles y permisos</h1>
 <p>Edite el nombre y los módulos habilitados de cada perfil. Los permisos se guardan en MySQL y se verifican en el servidor.</p>

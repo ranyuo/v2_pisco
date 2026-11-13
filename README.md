@@ -1,4 +1,21 @@
-# Portal IESTP Pisco
+# Intranet IESTP Pisco
+
+Aplicación de **gestión académica y administrativa** del IESTP Pisco, con el mismo enfoque que la intranet de Palpa (`ranyuo/v2_palpa`). La **web institucional** (portada, noticias, eventos, admisión, matrícula, becas, TUPA, transparencia y documentos de gestión) **se administra por separado**: esta aplicación ya no la publica ni la edita, y el servidor rechaza esos cambios incluso al administrador. Los datos heredados de la web se conservan en la base; no se borran. Ver [ALCANCE-INTRANET.md](ALCANCE-INTRANET.md).
+
+La entrada `/` abre el **inicio de sesión**. Cada usuario ve en **«Mi panel»** solo los módulos de su perfil:
+
+| Grupo | Módulo | Gestión en la intranet | Página independiente |
+| --- | --- | --- | --- |
+| Gestión académica | Horarios | `#/admin/ix-horarios` | `/horarios.php` (docentes y estudiantes ven su horario) |
+| Gestión académica | Certificación modular | `#/admin/ix-certificados` | `/certificados.php` (validación de documentos) |
+| Gestión académica | Grados y títulos | `#/admin/ix-titulos` | `/certificados.php` |
+| Gestión administrativa | Mesa de partes | `#/admin/expedientes` | `/mesa-de-partes.php` |
+| Gestión administrativa | Libro de reclamaciones | `#/admin/reclamos` | `/libro-de-reclamaciones.php` |
+| Gestión administrativa | Bolsa laboral | `#/admin/ix-bolsa` | `/bolsa-laboral.php` |
+| Perfiles profesionales | CV docente | `#/admin/cvdocente` | `/cv-docente.php` (directorio docente y acceso del docente a su CV) |
+
+Programas, alumnos, personal docente y la configuración académica son catálogos de soporte; usuarios, configuración, auditoría y respaldos son herramientas comunes. Las páginas independientes muestran solo su servicio, sin el menú de la intranet, y se pueden enlazar desde la web institucional. La dirección de esa web se indica con `website_url` en `config.php` (por omisión `https://iestppisco.edu.pe/`).
+
 
 Archivos para publicar en Hostinger:
 
@@ -55,18 +72,9 @@ La base de datos se actualiza sola la primera vez que se abre el sitio con la ve
 - **Contenido inicial** que carga la instalación: `portal-private/data/portal.json`.
 - **Imágenes y documentos:** `public_html/assets/pisco/`. Las imágenes grandes tienen una copia `.webp` que el servidor entrega a los navegadores compatibles.
 
-### Diseños, carrusel de programas y galería de noticias
+### Web institucional
 
-- **Apariencia del portal:** en la intranet, *Apariencia del portal* (botón «Apariencia» de la barra superior), en tres pasos:
-  1. **Estructura de la página:** **Clásico institucional**, **Moderno**, **Universitario**, **Editorial**, **Impacto**, **Horizonte** o **Campus**. Solo cambia la forma: cabecera, portada y bloques. *Universitario* sigue la estructura de un portal universitario moderno; *Impacto*, la de un portal de alto contraste (referencia de diseño: upn.edu.pe), con logotipo en bloque del color destacado y títulos condensados; *Horizonte*, la de un portal de universidad moderna (referencia de diseño: cientifica.edu.pe). Los bloques siguen el orden y la visibilidad configurados en *Portada*.
-  2. **Colores y letras:** la combinación en uso (color institucional, color de botones y enlaces y color destacado, letras y esquinas) y las demás combinaciones. **Todas las estructuras usan estos colores.** Con una combinación oscura (*Noche*), Impacto, Campus, Horizonte y Editorial muestran el sitio público con los tonos claros de esa combinación, porque no tienen versión oscura; el panel sí queda oscuro.
-  3. **Opciones avanzadas** (plegado): colores propios para una sola estructura. Normalmente no hace falta; si tiene valores propios aparece «Personalizado» y «Restablecer» vuelve a los colores del paso 2.
-  
-- **Texto junto al logotipo:** si *Configuración › Texto del logotipo generado* está vacío, las estructuras Impacto, Horizonte y Campus muestran el nombre corto oficial completo, sin abreviar.
-- **Programas de estudio en carrusel:** se muestran en carrusel por omisión, en la portada y en la página de programas. Para cambiar a cuadrícula, usa *Vista en la web* en el módulo *Programas de estudio* o *Presentación de los programas de estudio* en *Portada › Bloques, accesos y cifras*.
-- **Noticias con varias fotos:** cada noticia admite la imagen principal y hasta 4 fotos adicionales (5 en total). En la web se muestran como galería con visor ampliado.
-
-El portal de Pisco se construyó sobre el sistema de Chincha y se alineó el 29 de octubre de 2026 con el sistema optimizado de Nasca; el historial anterior (pruebas, informes y herramientas) sigue en Git (commit `f17a193`). El 10 de noviembre de 2026 el código se actualizó al sistema v2 de `ranyuo/v2_flv`, conservando el contenido, el tema, el logo y las imágenes de Pisco.
+La apariencia del portal, el carrusel de programas, las noticias y demás contenidos de la web institucional ya no se administran desde esta aplicación (enfoque de intranet, como Palpa). Sus datos anteriores siguen en la base por si se necesitan.
 
 ### Recuperación de contraseña por correo
 

@@ -1,31 +1,30 @@
 'use strict';
+// Intranet por módulos (enfoque de v2_palpa): la entrada «/» abre el ingreso, el panel muestra los siete módulos,
+// la web institucional no se administra aquí y cada servicio tiene su página independiente.
 const {chromium}=require('playwright');
 const fs=require('node:fs');const assert=require('node:assert/strict');
 (async()=>{
  const base=(process.env.PORTAL_BROWSER_URL||process.env.PORTAL_TEST_URL||'http://127.0.0.1:8081').replace(/\/$/,'');assert(['localhost','127.0.0.1'].includes(new URL(base).hostname),'Use an isolated local test site');
- const account=process.env.PORTAL_TEST_ACCOUNT_FILE?JSON.parse(fs.readFileSync(process.env.PORTAL_TEST_ACCOUNT_FILE,'utf8')):{username:'qaadmin',password:fs.readFileSync(process.env.PORTAL_TEST_PASSWORD_FILE,'utf8')};const password=account.password;
- const b=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
+ const account=process.env.PORTAL_TEST_ACCOUNT_FILE?JSON.parse(fs.readFileSync(process.env.PORTAL_TEST_ACCOUNT_FILE,'utf8')):{username:'qaadmin',password:fs.readFileSync(process.env.PORTAL_TEST_PASSWORD_FILE,'utf8')};
+ const b=await chromium.launch(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH,args:['--no-sandbox']}:{});
  try{
- const p=await b.newPage();p.setDefaultTimeout(15000);await p.route('https://**/*',r=>r.abort());const errors=[];p.on('pageerror',e=>errors.push(e.message));
- await p.goto(base+'/#/admin',{waitUntil:'domcontentloaded'});await p.locator('#lg-u').fill(account.username);await p.locator('#lg-p').fill(password);await Promise.all([p.waitForNavigation({waitUntil:'domcontentloaded'}),p.locator('#lg-p').press('Enter')]);await p.locator('a[href="#/admin/noticias"]').first().waitFor();
- const title='QA navegador '+Date.now();await p.goto(base+'/#/admin/noticias',{waitUntil:'domcontentloaded'});await p.locator('a[href="#/admin/noticias/nuevo"]').click();
- await p.locator('[name=titulo]').fill(title);await p.locator('[name=resumen]').fill('Noticia sintética creada mediante la interfaz para comprobar la persistencia.');await p.locator('[contenteditable=true]').first().fill('Contenido de prueba del editor visual.');
- await p.locator('[name=estado]').selectOption('Publicada');await p.locator('[name=categoriaId]').selectOption({index:1});await p.locator('[name=fecha]').fill('2026-01-02T10:00');
- let response=p.waitForResponse(r=>r.request().method()==='PUT'&&r.url().includes('route='));await p.getByRole('button',{name:'Guardar cambios',exact:true}).click();assert.equal((await response).status(),200);console.log('PASS: News published through editor');
- const anonymous=await b.newContext();let data=await(await anonymous.request.get(base+'/index.php?route=api/portal')).json();assert(data.data.noticias.some(n=>n.titulo===title));console.log('PASS: Published news visible anonymously');
- await p.locator('#lf-q').fill(title);await p.locator('[data-lf]').evaluate(f=>f.requestSubmit());const row=p.locator('tr').filter({hasText:title}).first();await row.locator('[data-act=edit]').click();await p.locator('[name=fecha]').fill('2040-01-02T10:00');response=p.waitForResponse(r=>r.request().method()==='PUT'&&r.url().includes('route='));await p.getByRole('button',{name:'Guardar cambios',exact:true}).click();assert.equal((await response).status(),200);
- data=await(await anonymous.request.get(base+'/index.php?route=api/portal')).json();assert(!data.data.noticias.some(n=>n.titulo===title));console.log('PASS: Scheduled future news hidden anonymously');
- await p.locator('#lf-q').fill(title);await p.locator('[data-lf]').evaluate(f=>f.requestSubmit());await p.locator('tr').filter({hasText:title}).first().locator('[data-act=edit]').click();await p.locator('[name=estado]').selectOption('Despublicada');response=p.waitForResponse(r=>r.request().method()==='PUT'&&r.url().includes('route='));await p.getByRole('button',{name:'Guardar cambios',exact:true}).click();assert.equal((await response).status(),200);
- data=await(await anonymous.request.get(base+'/index.php?route=api/portal')).json();assert(!data.data.noticias.some(n=>n.titulo===title));console.log('PASS: Unpublished news hidden anonymously');
- await p.goto(base+'/#/admin/ix-alumnos',{waitUntil:'domcontentloaded'});await p.waitForFunction(()=>!!window.jspdf?.jsPDF&&!!window.XLSX);
- let download=p.waitForEvent('download');await p.locator('[data-pdf="estudiantes"]').click();let file=await(await download).path();assert.equal(fs.readFileSync(file).subarray(0,4).toString(),'%PDF');if(process.env.PORTAL_TEST_ARTIFACT_DIR){fs.mkdirSync(process.env.PORTAL_TEST_ARTIFACT_DIR,{recursive:true});fs.copyFileSync(file,process.env.PORTAL_TEST_ARTIFACT_DIR+'/student-list.pdf')}console.log('PASS: Student PDF generated');
- download=p.waitForEvent('download');await p.locator('[data-xls="estudiantes"]').click();file=await(await download).path();const XLSX=require('../public_html/assets/vendor/xlsx.full.min.js');if(process.env.PORTAL_TEST_ARTIFACT_DIR){fs.mkdirSync(process.env.PORTAL_TEST_ARTIFACT_DIR,{recursive:true});fs.copyFileSync(file,process.env.PORTAL_TEST_ARTIFACT_DIR+'/student-list.xlsx')}const workbook=XLSX.read(fs.readFileSync(file));assert(workbook.SheetNames.length);assert(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]).length>=2);console.log('PASS: Student XLSX generated and parsed');
- const state=await(await p.request.get(base+'/index.php?route=api/portal')).json();const periodId='qa-browser-'+Date.now();let periodYear=2099;while(state.data.becasPeriodos.some(p=>Number(p.anio)===periodYear&&p.periodo==='II'))periodYear--;assert(periodYear>=2000);const period={id:periodId,anio:periodYear,periodo:'II',vigente:false,estado:'Publicado',info:'QA sintética'};const types=state.data.tiposBeca;const type=types.find(t=>!t.deleted)||{id:'qa-type',nombre:'QA Beca',descripcion:'QA'};
- const patches=[{path:['becasPeriodos'],kind:'value',before:state.data.becasPeriodos,after:[...state.data.becasPeriodos,period]}];if(!types.length)patches.push({path:['tiposBeca'],kind:'value',before:types,after:[type]});
- const seeded=await p.request.put(base+'/index.php?route=api/portal',{headers:{'X-CSRF-Token':state.csrf},data:{revision:state.revision,patch:patches}});assert.equal(seeded.status(),200,await seeded.text());
- const csv='\uFEFF'+[['dni','apellidos','nombres','codigo_programa','tipo_beca','motivo'],['00000091','QA Apellido','QA Importado',state.data.programas[0].codigo,type.nombre,'QA; detalle']].map(row=>row.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(';')).join('\r\n');
- await p.goto(base+'/?qa='+Date.now()+'#/admin/becasimport',{waitUntil:'domcontentloaded'});await p.locator('#im-p').selectOption(periodId);await p.locator('#im-f').setInputFiles({name:'qa.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});await p.locator('[data-doimp]').waitFor();response=p.waitForResponse(r=>r.request().method()==='PUT'&&r.url().includes('route='));await p.locator('[data-doimp]').click();assert.equal((await response).status(),200);console.log('PASS: UTF-8 quoted scholarship CSV imported');
- await p.goto(base+'/?qa='+Date.now()+'#/admin/becasimport',{waitUntil:'domcontentloaded'});await p.locator('#im-p').selectOption(periodId);await p.locator('#im-f').setInputFiles({name:'qa.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});await p.locator('[data-doimp]').waitFor();assert(await p.locator('[data-doimp]').isDisabled());console.log('PASS: Repeated scholarship CSV cannot import duplicates');
- assert.deepEqual(errors,[]);console.log('PASS: No JavaScript exceptions during editor and exports');
- }finally{await b.close()}
-})().catch(e=>{console.error(e);process.exitCode=1});
+  const p=await b.newPage();p.setDefaultTimeout(15000);await p.route('https://**/*',r=>r.abort());const errors=[];p.on('pageerror',e=>errors.push(e.message));
+  await p.goto(base+'/',{waitUntil:'domcontentloaded'});await p.locator('#lg-u').waitFor();
+  assert.match(p.url(),/#\/admin$/,'La entrada / abre el inicio de sesión');console.log('PASS: / opens the login');
+  await p.goto(base+'/#/noticias',{waitUntil:'domcontentloaded'});await p.waitForTimeout(800);
+  assert.match(await p.locator('main').innerText(),/web institucional/i);console.log('PASS: website routes are not part of the intranet');
+  await p.goto(base+'/#/admin',{waitUntil:'domcontentloaded'});await p.locator('#lg-u').fill(account.username);await p.locator('#lg-p').fill(account.password);
+  await Promise.all([p.waitForNavigation({waitUntil:'domcontentloaded'}),p.locator('#lg-p').press('Enter')]);await p.locator('.intra-modules').waitFor();
+  const cards=await p.locator('.intra-modules .intra-module h3').allInnerTexts();
+  for(const m of ['Horarios','Certificación modular','Grados y títulos','Mesa de partes','Libro de reclamaciones','Bolsa laboral','CV docente'])assert(cards.includes(m),'Falta el módulo '+m);
+  console.log('PASS: the dashboard lists the seven modules');
+  const menu=await p.locator('.adm-side nav').innerText();assert(!/Noticias|Portada|Eventos|Admisión/.test(menu),'El menú no debe incluir la web institucional');console.log('PASS: the menu has no website editors');
+  await p.goto(base+'/#/admin/noticias',{waitUntil:'domcontentloaded'});await p.waitForTimeout(800);assert.match(await p.locator('main').innerText(),/no tiene permiso|denegado/i);console.log('PASS: website editors are denied');
+  for(const [entry,text] of [['/mesa-de-partes.php',/Mesa de partes/i],['/libro-de-reclamaciones.php',/reclamaciones/i],['/bolsa-laboral.php',/Bolsa laboral/i],['/certificados.php',/documentos/i],['/horarios.php',/Horarios/i],['/cv-docente.php',/CV docente/i]]){
+   await p.goto(base+entry,{waitUntil:'domcontentloaded'});await p.locator('.standalone-header').waitFor();
+   assert.match(await p.locator('.standalone-service-name').innerText(),text);assert.equal(await p.locator('.adm-side').count(),0,'Sin el menú de la intranet');
+   console.log('PASS: independent page '+entry);
+  }
+  assert.deepEqual(errors,[]);console.log('PASS: no browser errors');
+ }finally{await b.close();}
+})().catch(e=>{console.error(e);process.exit(1);});
