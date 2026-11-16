@@ -11,7 +11,7 @@ trait PortalAccounts
     public function saveRole(array $input): void
     {
         $actor=$this->requireAdmin();$this->rate('roles',60,60);
-        $key=$input['role']??null;$defaults=PortalPolicy::defaults()['roles'];
+        $key=$input['role']??null;$defaults=IntranetScope::roles(PortalPolicy::defaults()['roles']);
         if(!is_string($key)||!isset($defaults[$key])||$key==='admin')throw new PortalError(422,'El administrador está protegido. Selecciona otro rol.');
         $label=($input['reset']??false)===true?$defaults[$key]['label']:($input['label']??'');$mods=($input['reset']??false)===true?$defaults[$key]['mods']:($input['mods']??[]);
         if(!is_string($label)||trim($label)===''||strlen($label)>100||!preg_match('/^[\p{L}\p{N} ._,()\/-]+$/u',$label)||!is_array($mods)||!array_is_list($mods))throw new PortalError(422,'Nombre o módulos del rol no válidos.');

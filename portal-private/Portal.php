@@ -11,6 +11,7 @@ final class PortalError extends RuntimeException
 
 require_once __DIR__.'/Schema.php';
 require_once __DIR__.'/Policy.php';
+require_once __DIR__.'/IntranetScope.php';
 require_once __DIR__.'/Accounts.php';
 require_once __DIR__.'/Files.php';
 require_once __DIR__.'/Domain.php';
@@ -27,10 +28,12 @@ require_once __DIR__.'/Mail.php';
 require_once __DIR__.'/Notifications.php';
 require_once __DIR__.'/SmtpSettings.php';
 require_once __DIR__.'/DocumentLookup.php';
+require_once __DIR__.'/Graduates.php';
+require_once __DIR__.'/Recovery.php';
 
 final class PortalApp
 {
-    use PortalAccounts, PortalForms;
+    use PortalAccounts, PortalForms, PortalGraduates, PortalRecovery;
     private const PUBLIC_COLLECTIONS = ['__v', 'config', 'slides', 'enlaces', 'paginas', 'reconocimientos',
         'programas', 'personas', 'jerarquica', 'egresados', 'categoriasNoticia', 'noticias', 'eventos',
         'tiposDocumento', 'documentos', 'tupa', 'tupaDocs', 'estadisticas', 'licenciamiento', 'inversiones',
@@ -188,15 +191,18 @@ final class PortalApp
     public function bootstrap(): array
     {
         $state=$this->state();$full=json_decode($state['data'],true,flags:JSON_THROW_ON_ERROR);$user=$this->user();
+        // Respaldo sin cron: si hay ofertas vencidas, se cierran después de responder (la página ya no las muestra como vigentes).
+        if(self::expiredOffers($full))portal_defer(function(){try{$this->closeExpiredOffers();}catch(Throwable){}});
         $full['visitas']=$this->visitCounts();
-        $data=PortalPolicy::project($full,$user,$this->publicData($full));
+        // Intranet: sin las colecciones de la web institucional (se administran por separado).
+        $data=IntranetScope::project(PortalPolicy::project($full,$user,$this->publicData($full)));
         $data['usuarios']=$this->visibleAccounts($user,$full);
         // Visitantes: las imágenes incrustadas en base64 se sirven como archivos estáticos cacheables.
         if(!$user)$data=$this->externalizeImages($data);
         // Visitantes: sin los usuarios del personal que crearon o editaron cada registro (son nombres de acceso).
         if(!$user)$data=self::withoutStaffStamps($data);
         if($user&&$user['rol']==='admin'){$data['auditoria']=[...PortalAudit::rows($this),...PortalAudit::legacy($this,$full)];$data['academico']['bitacora']=array_map(fn($r)=>['id'=>$r['id'],'f'=>$r['fecha'],'u'=>$r['usuario'],'a'=>$r['accion'],'m'=>$r['entidad'],'d'=>$r['registro'].' · '.$r['detalle']],PortalAudit::rows($this));}
-        return ['data'=>$data,'revision'=>(int)$state['revision'],'user'=>$user,'csrf'=>$_SESSION['csrf'],'numberingYear'=>(int)date('Y'),'schema_version'=>PortalSchema::VERSION,'roles'=>PortalPolicy::definitions()['roles'],'documentLookup'=>$this->documentLookupEnabled()];
+        return ['data'=>$data,'revision'=>(int)$state['revision'],'user'=>$user,'csrf'=>$_SESSION['csrf'],'numberingYear'=>(int)date('Y'),'schema_version'=>PortalSchema::VERSION,'roles'=>PortalPolicy::definitions()['roles'],'documentLookup'=>$this->documentLookupEnabled(),'scope'=>['mode'=>'intranet','website'=>IntranetScope::website($this->config),'modules'=>IntranetScope::MODULES]];
     }
     public function input(): array
     {
@@ -302,8 +308,8 @@ final class PortalApp
     }
 
     /** Perfiles de ingreso de la portada de la Bolsa Laboral: cada tarjeta admite solo sus tipos de cuenta. */
-    public const LOGIN_PROFILES=['estudiante'=>['estudiante','egresado'],'docente'=>['docente'],'empresa'=>['empresa'],'administrador'=>null];
-    private const LOGIN_PROFILE_LABELS=['estudiante'=>'Estudiante/Egresado','docente'=>'Docente','empresa'=>'Empresa','administrador'=>'Administrador'];
+    public const LOGIN_PROFILES=['estudiante'=>['estudiante','egresado'],'empresa'=>['empresa'],'administrador'=>null];
+    private const LOGIN_PROFILE_LABELS=['estudiante'=>'Estudiante/Egresado','empresa'=>'Empresa','administrador'=>'Administrador'];
 
     public function login(array $input): array
     {
@@ -358,8 +364,9 @@ final class PortalApp
             $state=$this->state(true);$user=$this->requireUser();if(!isset($input['patch'])&&(int)$state['revision']!==$input['revision'])throw new PortalError(409,'Otra persona guardó cambios. Recarga la página antes de continuar.');
             $previous=json_decode($state['data'],true,flags:JSON_THROW_ON_ERROR);
             foreach($input['data']['usuarios']??[] as $account)if(!is_array($account)||isset($account['passHash'],$account['password'])||isset($account['passHash'])||isset($account['password']))throw new PortalError(422,'Las contraseñas se gestionan mediante el servicio de cuentas.');
-            $visible=PortalPolicy::project($previous,$user,$this->publicData($previous));$visible['usuarios']=$this->visibleAccounts($user,$previous);
+            $visible=IntranetScope::project(PortalPolicy::project($previous,$user,$this->publicData($previous)));$visible['usuarios']=$this->visibleAccounts($user,$previous);
             $incoming=isset($input['patch'])?PortalPatch::apply($visible,$input['patch']):$input['data'];
+            IntranetScope::assertChanges($visible,$incoming);
             $data=PortalPolicy::apply($previous,$visible,$incoming,$user);
             PortalRules::structure($data);PortalRules::stateShape($previous,$data);$data=PortalRules::scrub($data);
             $ops=$input['accounts']??[];if(!is_array($ops)||count($ops)>100)throw new PortalError(422,'Operaciones de cuentas no válidas.');
@@ -378,7 +385,7 @@ final class PortalApp
             $data['auditoria']=$previous['auditoria']??[];
             $this->updateState($data,(int)$state['revision']+1);
             $data=$this->normalizeDates($data);
-            $projected=PortalPolicy::project($data,$this->user(),$this->publicData($data));
+            $projected=IntranetScope::project(PortalPolicy::project($data,$this->user(),$this->publicData($data)));
             // Las visitas viven en pisco_visits; sin esto la respuesta las vaciaba y el panel mostraba 0.
             $projected['visitas']=$this->visitCounts();
             if($this->user()&&$this->user()['rol']==='admin'){$projected['auditoria']=[...PortalAudit::rows($this),...PortalAudit::legacy($this,$data)];$projected['academico']['bitacora']=array_map(fn($r)=>['id'=>$r['id'],'f'=>$r['fecha'],'u'=>$r['usuario'],'a'=>$r['accion'],'m'=>$r['entidad'],'d'=>$r['registro'].' · '.$r['detalle']],PortalAudit::rows($this));}
@@ -552,6 +559,7 @@ final class PortalApp
     }
     public function submit(string $type, array $input): array
     {
+        if (!in_array($type,['reclamos','expedientes'],true)) throw new PortalError(404,'Formulario fuera del alcance de la intranet.');
         if (!isset(self::RULES[$type])) throw new PortalError(404, 'Tipo de solicitud no disponible.');
         $this->rate('submissions', 10, 60);
         if (!is_string($input['idempotency_key'] ?? null) || !preg_match('/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i', $input['idempotency_key']) || !is_array($input['record'] ?? null)) {
@@ -680,7 +688,7 @@ final class PortalApp
 
     public function lookup(string $type, array $input): array
     {
-        if (!in_array($type, ['expedientes', 'reclamos', 'certificados', 'becarios'], true)) throw new PortalError(404, 'Consulta no disponible.');
+        if (!in_array($type, ['expedientes', 'reclamos', 'certificados'], true)) throw new PortalError(404, 'Consulta no disponible.');
         $this->rate('lookups', 10, 60);
         $lookupProof=$input['proof']??[];
         $input = self::validate($input, ['reference' => 'required|string|max:150', 'document' => (in_array($type,['certificados','becarios'],true) ? 'nullable' : 'required').'|string|max:50', 'mode' => 'nullable|string|max:10']);

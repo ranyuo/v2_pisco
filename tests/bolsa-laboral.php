@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-// Bolsa Laboral (Informe N.º 011, observación 5): ingreso por perfil, recomendaciones de docentes y diseño configurable.
+// Bolsa Laboral (Informe N.º 011, observación 5): ingreso por perfil, privacidad entre empresas y diseño configurable.
 ob_start();require __DIR__.'/regressions.php';
 function ruc(string $first10): string {$w=[5,4,3,2,7,6,5,4,3,2];$s=0;foreach($w as $i=>$x)$s+=(int)$first10[$i]*$x;$d=11-$s%11;if($d===10)$d=0;if($d===11)$d=1;return $first10.$d;}
 function patch(PortalApp $app,array $path,mixed $after): array {$s=$app->bootstrap();$before=$s['data'];foreach($path as $k)$before=$before[$k]??null;return $app->save(['revision'=>$s['revision'],'patch'=>[['path'=>$path,'kind'=>'value','before'=>$before,'after'=>$after]]]);}
@@ -25,92 +25,52 @@ $app->createAccount(['username'=>'qadocente','name'=>'QA Docente','password'=>$p
 $app->createAccount(['username'=>'qaempresa','name'=>'QA Empresa Uno','password'=>$password,'role'=>'empresa','vin'=>'emp:1']);
 $app->createAccount(['username'=>'qaempresa2','name'=>'QA Empresa Dos','password'=>$password,'role'=>'empresa','vin'=>'emp:2']);
 $app->createAccount(['username'=>'qaegresada','name'=>'QA Egresada','password'=>$password,'role'=>'egresado','vin'=>'est:2']);
-verify(PortalPolicy::can(['rol'=>'docente'],'ix-bolsa'),'Docente role includes the Bolsa Laboral module');
+verify(!PortalPolicy::can(['rol'=>'docente'],'ix-bolsa'),'Teacher role no longer includes the Bolsa Laboral module');
 
 // Ingreso por perfil: cada tarjeta admite solo su tipo de cuenta.
-as_user($app,'qadocente',$password,'docente');verify($app->user()['rol']==='docente','Teacher signs in through the Docente card');
+refuses(fn()=>as_user($app,'qadocente',$password,'docente'),422,'Perfil de ingreso','The Docente card no longer exists');
 refuses(fn()=>as_user($app,'qadocente',$password,'empresa'),403,'no corresponde','Teacher account rejected by the Empresa card');
 verify($app->user()===null,'Rejected profile login leaves no session');
 as_user($app,'qaegresada',$password,'estudiante');verify($app->user()['rol']==='egresado','Graduate signs in through the Estudiante/Egresado card');
 as_user($app,'qaempresa',$password,'empresa');verify($app->user()['rol']==='empresa','Company signs in through the Empresa card');
 as_user($app,'qaadmin',$password,'administrador');verify($app->user()['rol']==='admin','Administrator signs in through the Administrador card');
-refuses(fn()=>as_user($app,'qaadmin',$password,'docente'),403,'no corresponde','Administrator rejected by the Docente card');
+refuses(fn()=>as_user($app,'qadocente',$password,'estudiante'),403,'no corresponde','Teacher account rejected by the Estudiante/Egresado card');
 refuses(fn()=>as_user($app,'qaempresa',$password,'administrador'),403,'no corresponde','Company rejected by the Administrador card');
 refuses(fn()=>as_user($app,'qadocente',$password,'rector'),422,'Perfil de ingreso','Unknown login profile rejected');
-refuses(fn()=>as_user($app,'qadocente','incorrecta-123','docente'),422,'Usuario o contraseña incorrectos','Wrong password keeps the generic message');
+refuses(fn()=>as_user($app,'qadocente','incorrecta-123','estudiante'),422,'Usuario o contraseña incorrectos','Wrong password keeps the generic message');
 
-// El docente ve ofertas vigentes y datos mínimos de estudiantes y egresados.
-as_user($app,'qadocente',$password,'docente');
-$view=$app->bootstrap()['data']['academico'];
-verify(count($view['estudiantes'])===2&&!array_diff(array_keys($view['estudiantes'][0]),['id','nom','prog','estado']),'Teacher sees only name, programme and status of students');
-verify(!str_contains(json_encode($view['estudiantes']),'00000002')&&!str_contains(json_encode($view['estudiantes']),'egresada@example.test'),'Teacher does not receive DNI or e-mail');
-verify(($view['recomendaciones']??null)===[],'Teacher starts without recommendations');
-$rec=['id'=>1762780000001,'of'=>1,'est'=>2,'doc'=>1,'fecha'=>$today,'motivo'=>'Destacó en prácticas.'];
-patch($app,['academico','recomendaciones'],[$rec]);
-verify(count($app->bootstrap()['data']['academico']['recomendaciones'])===1,'Teacher records a recommendation');
-refuses(fn()=>patch($app,['academico','recomendaciones'],[$rec,[...$rec,'id'=>1762780000002]]),422,'Ya recomendaste','Duplicate recommendation for the same offer and person rejected');
-refuses(fn()=>patch($app,['academico','recomendaciones'],[$rec,[...$rec,'id'=>1762780000003,'of'=>3]]),422,'vigentes','Recommendation for a closed offer rejected');
-refuses(fn()=>patch($app,['academico','recomendaciones'],[$rec,[...$rec,'id'=>1762780000004,'est'=>1,'motivo'=>str_repeat('a',501)]]),422,'500','Reason over 500 characters rejected');
-refuses(fn()=>patch($app,['academico','recomendaciones'],[$rec,[...$rec,'id'=>1762780000005,'est'=>1,'extra'=>'x']]),422,'no permitidos','Recommendation with extra fields rejected');
-refuses(fn()=>patch($app,['academico','recomendaciones'],[$rec,[...$rec,'id'=>1762780000006,'est'=>1,'doc'=>2]]),403,'otra persona','Teacher cannot sign as another teacher');
-refuses(fn()=>patch($app,['academico','recomendaciones'],[[...$rec,'motivo'=>'Editado']]),403,'no se edita','Sent recommendation cannot be edited');
-$offers=$app->bootstrap()['data']['academico']['ofertas'];$changed=$offers;$changed[0]['puesto']='Alterado';
-refuses(fn()=>patch($app,['academico','ofertas'],$changed),403,'ofertas','Teacher cannot modify offers');
-patch($app,['academico','recomendaciones'],[]);verify($app->bootstrap()['data']['academico']['recomendaciones']===[],'Teacher withdraws own recommendation');
-patch($app,['academico','recomendaciones'],[$rec]);
-
-// La empresa ve las recomendaciones de sus ofertas; otra empresa no.
-as_user($app,'qaempresa',$password,'empresa');$company=$app->bootstrap()['data']['academico'];
-verify(count($company['recomendaciones'])===1&&$company['recomendaciones'][0]['of']===1,'Company sees recommendations for its offers');
-verify((bool)array_filter($company['estudiantes'],fn($e)=>$e['id']===2&&$e['nom']==='QA Egresada'),'Company sees the name of the recommended person');
-verify((bool)array_filter($company['notifs'],fn($n)=>str_contains($n['txt'],'recomendó')),'Company is notified of the recommendation');
-as_user($app,'qaempresa2',$password,'empresa');$other=$app->bootstrap()['data']['academico'];
-verify(($other['recomendaciones']??[])===[]&&!array_filter($other['estudiantes'],fn($e)=>$e['id']===2),'Another company sees neither the recommendation nor the person');
-as_user($app,'qaegresada',$password,'estudiante');
-verify((bool)array_filter($app->bootstrap()['data']['academico']['notifs'],fn($n)=>str_contains($n['txt'],'te recomendó')),'Recommended graduate is notified');
-
-// Administración: ve todo y no puede borrar una oferta con recomendaciones.
-$admin();$full=$app->bootstrap()['data']['academico'];verify(count($full['recomendaciones'])===1,'Administrator sees all recommendations');
-refuses(fn()=>saveRows($app,'ofertas',array_values(array_filter($full['ofertas'],fn($o)=>$o['id']!==1))),422,'relacionados','Offer with recommendations cannot be deleted');
-
-// Revisión: protecciones adicionales.
-$app->createAccount(['username'=>'qaatencion','name'=>'QA Atención','password'=>$password,'role'=>'atencion']);
-$acad=$app->bootstrap()['data']['academico'];
-saveRows($app,'ofertas',[...$acad['ofertas'],array_replace($offer(4,1,'Publicada',$later),['prog'=>3])]);
+// Sin recomendaciones: el docente no recibe datos de la Bolsa y la empresa solo ve a quienes postularon.
+as_user($app,'qadocente',$password);$view=$app->bootstrap()['data']['academico'];
+verify(!isset($view['recomendaciones'])&&empty($view['postulaciones'])&&empty($view['perfilesLab'])&&!str_contains(json_encode($view['empresas']??[]),'uno@example.test'),'Teacher gets no Bolsa data, applications, CVs or company contacts');
+$admin();$acad=$app->bootstrap()['data']['academico'];
 patch($app,['academico','perms'],[...$acad['perms'],'doc'=>[...($acad['perms']['doc']??[]),'bolsa'=>2]]);
-$app->createAccount(['username'=>'qaest1','name'=>'QA Estudiante','password'=>$password,'role'=>'estudiante','vin'=>'est:1']);
-as_user($app,'qadocente',$password,'docente');$view=$app->bootstrap()['data']['academico'];
-verify(empty($view['postulaciones'])&&empty($view['perfilesLab'])&&!str_contains(json_encode($view['empresas']??[]),'uno@example.test'),'Teacher gets no applications, CVs or company contacts even if the matrix grants a Bolsa level');
+as_user($app,'qadocente',$password);$view=$app->bootstrap()['data']['academico'];
+verify(empty($view['postulaciones'])&&empty($view['perfilesLab']),'Teacher gets no applications or CVs even if the matrix grants a Bolsa level');
 $emps=$view['empresas']??[];if($emps){$emps[0]['validada']=false;refuses(fn()=>patch($app,['academico','empresas'],$emps),403,'empresas','Teacher cannot modify companies even with a Bolsa level');}else verify(true,'Teacher cannot modify companies even with a Bolsa level (not visible)');
-$recs=$view['recomendaciones'];
-refuses(fn()=>patch($app,['academico','recomendaciones'],[...$recs,['id'=>1762780000010,'of'=>4,'est'=>1,'doc'=>1,'fecha'=>$today,'motivo'=>'']]),422,'otro programa','Recommendation for an offer of another programme rejected');
-refuses(fn()=>patch($app,['academico','recomendaciones'],[...$recs,['id'=>1762780000011,'of'=>1,'est'=>1,'doc'=>1,'fecha'=>'2020-01-01','motivo'=>'']]),422,'Fecha','Backdated recommendation rejected');
-refuses(fn()=>patch($app,['academico','recomendaciones'],[...$recs,['id'=>1762780000012,'of'=>1,'est'=>1,'doc'=>1,'fecha'=>'2026-02-31','motivo'=>'']]),422,'Fecha','Impossible recommendation date rejected');
+$admin();patch($app,['academico','perms'],$acad['perms']);
+verify(!isset($acad['recomendaciones']),'Recommendation data is no longer kept');
 as_user($app,'qaempresa',$password,'empresa');$company=$app->bootstrap()['data']['academico'];
-$person=array_values(array_filter($company['estudiantes'],fn($e)=>$e['id']===2))[0]??[];
-verify($person&&!isset($person['correo'])&&!isset($person['tel'])&&!isset($person['dni']),'Company sees a recommended person who has not applied without DNI, e-mail or phone');
+verify(!array_filter($company['estudiantes'],fn($e)=>$e['id']===2),'Company does not see a graduate who has not applied');
 verify(!array_filter($company['perfilesLab']??[],fn($r)=>($r['est']??null)===2),'Company does not receive the CV of a person who has not applied');
-as_user($app,'qaatencion',$password);$s=$app->bootstrap()['data']['academico'];
-refuses(fn()=>patch($app,['academico','recomendaciones'],[...$s['recomendaciones'],['id'=>1762780000013,'of'=>1,'est'=>1,'doc'=>1,'fecha'=>$today,'motivo'=>'']]),403,'docente','Staff cannot register recommendations on behalf of a teacher');
-$admin();$s=$app->bootstrap()['data']['academico'];patch($app,['academico','recomendaciones'],[]);
-verify($app->bootstrap()['data']['academico']['recomendaciones']===[],'Administrator can withdraw recommendations');
-saveRows($app,'ofertas',array_values(array_filter($s['ofertas'],fn($o)=>$o['id']!==4)));verify(!array_filter($app->bootstrap()['data']['academico']['ofertas'],fn($o)=>$o['id']===4),'Offer can be deleted once its recommendations are withdrawn');
-patch($app,['academico','perms'],$acad['perms']);
+$legacy=PortalContent::normalize(['config'=>['bolsa'=>['perfiles'=>['docente'=>['img'=>''],'empresa'=>['img'=>'']]]],'academico'=>['recomendaciones'=>[['id'=>1]]]]);
+verify(!isset($legacy['academico']['recomendaciones'])&&!isset($legacy['config']['bolsa']['perfiles']['docente']),'Existing installs drop recommendation data and the Docente card');
+$admin();
 // Instalaciones anteriores: los valores de la página pública los completa el servidor (el navegador no cambia la configuración al abrirla).
 $db=$app->db();$db->exec("UPDATE pisco_state SET data=JSON_REMOVE(data,'$.config.bolsa.diseno','$.config.bolsa.titulo','$.config.bolsa.perfiles') WHERE id=1");
 $fixed=PortalContent::normalize(json_decode($db->query('SELECT data FROM pisco_state WHERE id=1')->fetchColumn(),true))['config']['bolsa'];
 verify(($fixed['diseno']??'')==='actual'&&isset($fixed['perfiles']['estudiante'])&&($fixed['titulo']??'')!=='','Existing installs get the public-page defaults from the server');
 // Diseño configurable de la página pública.
 $bolsa=$app->bootstrap()['data']['config']['bolsa'];
-verify(($bolsa['diseno']??'')==='actual'&&isset($bolsa['perfiles']['docente']),'Default public design is the current one, with default card photos');
+verify(($bolsa['diseno']??'')==='actual'&&isset($bolsa['perfiles']['estudiante'])&&!isset($bolsa['perfiles']['docente']),'Default public design is the current one, with default card photos');
 refuses(fn()=>bolsa($app,[...$bolsa,'diseno'=>'otro']),422,'Diseño de la Bolsa','Unknown public design rejected');
 refuses(fn()=>bolsa($app,[...$bolsa,'titulo'=>str_repeat('x',121)]),422,'120','Title over 120 characters rejected');
-refuses(fn()=>bolsa($app,[...$bolsa,'perfiles'=>['docente'=>['img'=>'javascript:alert(1)']]]),422,'foto','Unsafe card photo rejected');
+refuses(fn()=>bolsa($app,[...$bolsa,'perfiles'=>['estudiante'=>['img'=>'javascript:alert(1)']]]),422,'foto','Unsafe card photo rejected');
 refuses(fn()=>bolsa($app,[...$bolsa,'perfiles'=>['rector'=>['img'=>'']]]),422,'Perfiles de la Bolsa','Unknown card rejected');
+refuses(fn()=>bolsa($app,[...$bolsa,'perfiles'=>['docente'=>['img'=>'']]]),422,'Perfiles de la Bolsa','Docente card rejected');
 bolsa($app,[...$bolsa,'diseno'=>'perfiles','titulo'=>'Bolsa QA','perfiles'=>[...$bolsa['perfiles'],'empresa'=>['img'=>'data:image/png;base64,iVBORw0KGgo=']]]);
 $saved=$app->bootstrap()['data']['config']['bolsa'];verify($saved['diseno']==='perfiles'&&$saved['titulo']==='Bolsa QA'&&str_starts_with($saved['perfiles']['empresa']['img'],'data:image/png'),'Profile design, title and uploaded photo saved');
 $app->logout();verify(($app->bootstrap()['data']['config']['bolsa']['diseno']??'')==='perfiles','Visitors receive the chosen design');
-as_user($app,'qadocente',$password,'docente');
+as_user($app,'qadocente',$password);
 refuses(fn()=>bolsa($app,[...$saved,'diseno'=>'actual']),403,'configuración','Teacher cannot change the public design');
 $app->logout();
 echo "$passed total checks passed.\n";

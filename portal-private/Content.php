@@ -31,8 +31,10 @@ final class PortalContent
             static $seedBolsa;$seedBolsa??=(json_decode((string)@file_get_contents(__DIR__.'/data/portal.json'),true)['config']['bolsa']??[]);
             $data['config']['bolsa']+=['diseno'=>'actual','titulo'=>$seedBolsa['titulo']??'Bienvenido a la Bolsa Laboral','perfiles'=>$seedBolsa['perfiles']??[]];
         }
-        // Recomendaciones de docentes de la Bolsa Laboral: colección nueva que las bases anteriores no tienen.
-        if(isset($data['academico'])&&is_array($data['academico'])&&!isset($data['academico']['recomendaciones']))$data['academico']['recomendaciones']=[];
+        // La recomendación de docentes se retiró de la Bolsa Laboral: se eliminan sus datos y la tarjeta «Docente».
+        if(isset($data['academico'])&&is_array($data['academico']))unset($data['academico']['recomendaciones']);
+        if(is_array($data['academico']['notifs']??null))$data['academico']['notifs']=array_values(array_filter($data['academico']['notifs'],fn($n)=>!is_array($n)||!preg_match('/recomend/iu',(string)($n['txt']??''))));
+        if(isset($data['config']['bolsa']['perfiles'])&&is_array($data['config']['bolsa']['perfiles']))unset($data['config']['bolsa']['perfiles']['docente']);
         // «Impacto institucional» era Impacto con los colores del portal; desde que todas las estructuras usan esos colores es la misma.
         if(($data['config']['diseno']??null)==='impacto-flv')$data['config']['diseno']='impacto';
         if(isset($data['config']['disenoColores']['impacto-flv'])&&is_array($data['config']['disenoColores'])){

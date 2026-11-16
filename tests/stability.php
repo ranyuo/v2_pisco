@@ -23,9 +23,10 @@ $bad=$lesson;$bad['ini']='08:30';rejects(fn()=>saveRows($app,'sesiones',[$lesson
 // Publish an actual group; a conflicting lesson must not get through.
 $s=$app->bootstrap();$pub=['1|I|A|Mañana|2026-II'=>['fecha'=>date(DATE_ATOM),'por'=>'QA']];saveRows($app,'publicados',$pub);
 $bad=$lesson;$bad['id']=2;$bad['ini']='08:30';rejects(fn()=>saveRows($app,'sesiones',[$lesson,$bad]),422,'Published timetable rejects overlaps');
-$s=$app->bootstrap();$news=$s['data']['noticias'][0];unset($news['id']);
-rejects(fn()=>$app->save(['revision'=>$s['revision'],'patch'=>[['path'=>['noticias'],'kind'=>'value','before'=>$s['data']['noticias'],'after'=>[...$s['data']['noticias'],$news]]]]),422,'Content without identity rejected');
-$news['id']='bad" onclick="QA';rejects(fn()=>$app->save(['revision'=>$s['revision'],'patch'=>[['path'=>['noticias'],'kind'=>'value','before'=>$s['data']['noticias'],'after'=>[...$s['data']['noticias'],$news]]]]),422,'Unsafe content identity rejected');
+// Intranet: la web institucional (noticias, portada…) no se administra aquí; el servidor rechaza sus cambios.
+$s=$app->bootstrap();$news=['id'=>'qa-news','titulo'=>'QA'];
+rejects(fn()=>$app->save(['revision'=>$s['revision'],'patch'=>[['path'=>['noticias'],'kind'=>'value','before'=>$s['data']['noticias'],'after'=>[...$s['data']['noticias'],$news]]]]),403,'Editorial content rejected by the intranet');
+$news['id']='bad" onclick="QA';rejects(fn()=>$app->save(['revision'=>$s['revision'],'patch'=>[['path'=>['noticias'],'kind'=>'value','before'=>$s['data']['noticias'],'after'=>[...$s['data']['noticias'],$news]]]]),403,'Unsafe editorial content rejected');
 // Malformed API data should be a validation error, not an internal server error.
 foreach(['docentes','sesiones','docs','perfilesLab'] as $key){
     $s=$app->bootstrap();rejects(fn()=>$app->save(['revision'=>$s['revision'],'patch'=>[['path'=>['academico',$key],'kind'=>'value','before'=>$s['data']['academico'][$key],'after'=>'invalid']]]),422,'Malformed collection rejected: '.$key);

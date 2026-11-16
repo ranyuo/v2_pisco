@@ -1,5 +1,5 @@
-/* Servicios públicos con enlace propio (/mesa-de-partes.php, /libro-de-reclamaciones.php, /bolsa-laboral.php y
-   /certificados.php): comparten la API y los datos, sin la navegación del portal ni de la intranet.
+/* Servicios públicos con enlace propio (/mesa-de-partes.php, /libro-de-reclamaciones.php, /bolsa-laboral.php,
+   /certificados.php, /horarios.php y /cv-docente.php): comparten la API y los datos, sin la navegación del portal ni de la intranet.
    En el portal principal (/) no se modifica nada. */
 'use strict';
 (function(){
@@ -8,7 +8,9 @@ const PUBLIC_SERVICE_PAGES={
  'servicios/mesa-de-partes':{title:'Mesa de partes virtual',entry:'/mesa-de-partes.php',accent:'#b94313'},
  'servicios/libro-de-reclamaciones':{title:'Libro de reclamaciones',entry:'/libro-de-reclamaciones.php',accent:'#a62d3a'},
  'servicios/bolsa-laboral':{title:'Bolsa laboral',entry:'/bolsa-laboral.php',accent:'#167568'},
- 'servicios/consulta-certificados':{title:'Consulta de documentos',entry:'/certificados.php',accent:'#245487'}
+ 'servicios/consulta-certificados':{title:'Consulta de documentos',entry:'/certificados.php',accent:'#245487'},
+ 'servicios/horarios':{title:'Horarios',entry:'/horarios.php',accent:'#5b3fa0'},
+ 'servicios/cv-docente':{title:'CV docente',entry:'/cv-docente.php',accent:'#1d6b8f'}
 };
 const PUBLIC_SERVICE_ALIASES={'libro-de-reclamaciones':'servicios/libro-de-reclamaciones','transparencia/libro-de-reclamaciones':'servicios/libro-de-reclamaciones'};
 function publicServicePath(){
@@ -53,7 +55,7 @@ function serviceWorkspaceMarkup(){
  const user=currentUser();
  if(user&&window.PORTAL_EMPLOYMENT_CONTEXT())return `<div class="standalone-account"><span>${esc(user.nombre)}</span><button type="button" class="btn sec sm" data-service-logout>Salir de Bolsa laboral</button></div>${ixWrap(IX.view('bolsa'))}`;
  if(user)return `<section class="panel"><h2>Acceso laboral</h2><p>Este espacio está destinado a estudiantes, egresados y empresas. La sesión actual pertenece a otro perfil.</p><button type="button" class="btn" data-service-logout>Cambiar de usuario</button></section>`;
- return `<section class="panel standalone-login"><h2>Mi acceso laboral</h2><p>Ingresa con tu cuenta institucional para gestionar tu perfil, postulaciones u ofertas dentro de Bolsa laboral.</p><form data-service-login><div class="form-grid"><div class="field"><label for="sl-role">Tipo de usuario</label><select id="sl-role" name="role" required><option value="estudiante">Estudiante</option><option value="egresado">Egresado</option><option value="empresa">Empresa</option></select></div><div class="field"><label for="sl-user">DNI, RUC o usuario</label><input id="sl-user" name="username" required autocomplete="username"></div><div class="field"><label for="sl-password">Contraseña</label><input id="sl-password" name="password" required type="password" autocomplete="current-password"></div></div><p role="alert" data-service-login-error></p><button class="btn" type="submit">Ingresar a Bolsa laboral</button><p class="note">Si necesitas recuperar tu acceso, comunícate con el responsable institucional.</p></form></section>`;
+ return `<section class="panel standalone-login"><h2>Mi acceso laboral</h2><p>Ingresa con tu cuenta institucional para gestionar tu perfil, postulaciones u ofertas dentro de Bolsa laboral.</p><form data-service-login><div class="form-grid"><div class="field"><label for="sl-role">Tipo de usuario</label><select id="sl-role" name="role" required><option value="estudiante">Estudiante</option><option value="egresado">Egresado</option><option value="empresa">Empresa</option></select></div><div class="field"><label for="sl-user">DNI, RUC o usuario</label><input id="sl-user" name="username" required autocomplete="username"></div><div class="field"><label for="sl-password">Contraseña</label><input id="sl-password" name="password" required type="password" autocomplete="current-password"></div></div><p role="alert" data-service-login-error></p><button class="btn" type="submit">Ingresar a Bolsa laboral</button><p class="note">¿Egresaste y aún no tienes cuenta? <button type="button" data-egr-open="registro" style="background:none;border:0;padding:0;color:var(--link,#1a5fae);text-decoration:underline;cursor:pointer;font:inherit">Regístrate como egresado</button>. ¿Olvidaste tu contraseña? <button type="button" data-pw-reset style="background:none;border:0;padding:0;color:var(--link,#1a5fae);text-decoration:underline;cursor:pointer;font:inherit">Restablécela con un código a tu correo</button>.</p></form></section>`;
 }
 function openServiceWorkspace(){
  const button=document.querySelector('.pz-mt [data-tab="workspace"]');if(button)button.click();

@@ -1,8 +1,7 @@
 /* Bolsa Laboral (Informe N.º 011, observación 5).
-   - Diseño configurable de la página pública: «actual» (sin cambios) o «perfiles», con cuatro tarjetas de ingreso
-     (Estudiante/Egresado, Docente, Administrador y Empresa). Cada tarjeta orienta el ingreso y rechaza cuentas de otro perfil;
+   - Diseño configurable de la página pública: «actual» (sin cambios) o «perfiles», con tres tarjetas de ingreso
+     (Estudiante/Egresado, Administrador y Empresa). Cada tarjeta orienta el ingreso y rechaza cuentas de otro perfil;
      el acceso a los datos lo siguen controlando los permisos del servidor.
-   - Docente: ve las ofertas vigentes y recomienda estudiantes o egresados; la empresa y el administrador ven las recomendaciones.
    - Carga masiva por Excel de empresas y ofertas (la de estudiantes y egresados ya existía), con cualquiera de los dos diseños.
    Se carga antes de standalone-services.js para que /bolsa-laboral.php también muestre el diseño elegido. */
 'use strict';
@@ -34,30 +33,24 @@ async function readSheet(file){
 }
 
 const PERFILES=[
- {k:'estudiante',label:'Estudiante/Egresado',icon:'grad',text:'Postula a las ofertas con tu DNI y tu CV.',user:'DNI',hint:'Tu DNI y la contraseña que te entregó Secretaría Académica.'},
- {k:'docente',label:'Docente',icon:'book',text:'Revisa las ofertas y recomienda a tus estudiantes y egresados.',user:'Usuario',hint:'Tu usuario docente de la intranet.'},
- {k:'administrador',label:'Administrador',icon:'gear',text:'Gestiona ofertas, empresas, postulaciones y cargas masivas.',user:'Usuario',hint:'Tu usuario del personal del instituto.'},
- {k:'empresa',label:'Empresa',icon:'building',text:'Publica convocatorias y revisa a tus postulantes.',user:'RUC',hint:'El RUC y la contraseña con que registraste tu empresa.'}];
+ {k:'estudiante',label:'Estudiante/Egresado',icon:'grad',btn:'Ingresar con DNI',tag:'Postula aquí',text:'Postula a las ofertas con tu DNI y tu CV.',user:'DNI',hint:'Tu DNI y tu contraseña (la que creaste al registrarte o la que te entregó Secretaría Académica).'},
+ {k:'administrador',label:'Administrador',icon:'gear',btn:'Ingresar',tag:'Personal del instituto',text:'Gestiona ofertas, empresas, postulaciones y cargas masivas.',user:'Usuario',hint:'Tu usuario del personal del instituto.'},
+ {k:'empresa',label:'Empresa',icon:'building',btn:'Ingresar con RUC',tag:'Registro gratuito',text:'Publica convocatorias y revisa a tus postulantes.',user:'RUC',hint:'El RUC y la contraseña con que registraste tu empresa.'}];
 const TITULO_DEF='Bienvenido a la Bolsa Laboral';
 const PF=k=>PERFILES.find(p=>p.k===k);
 // Copia de lectura: no se modifica la configuración al abrir la página (el servidor completa los valores que falten).
 const cfg=()=>{const c=window.pzBolsaCfg();return {diseno:c.diseno==='perfiles'?'perfiles':'actual',titulo:typeof c.titulo==='string'&&c.titulo.trim()?c.titulo:TITULO_DEF,perfiles:c.perfiles&&typeof c.perfiles==='object'&&!Array.isArray(c.perfiles)?c.perfiles:{}};};
 const fotoDe=k=>(cfg().perfiles[k]||{}).img||'';
 const hoy=()=>ymd(new Date());
-const D=()=>{const d=XD();if(!Array.isArray(d.recomendaciones))d.recomendaciones=[];return d;};
-const binding=(u,type)=>{const m=String(u?.vin||'').match(new RegExp('^'+type+':(\\d+)$'));return m?+m[1]:null;};
-const vigentes=()=>{const d=D();return d.ofertas.filter(o=>o.estado==='Publicada'&&o.limite>=hoy()&&(d.empresas.find(e=>e.id===o.emp)||{}).validada).sort((a,b)=>a.limite.localeCompare(b.limite));};
-const docName=id=>(D().docentes.find(x=>x.id===id)||{}).nom||'Docente';
-const condLabel=e=>e.estado==='Regular'?'Estudiante':(e.estado||'');
-// Identificadores amplios: el docente solo ve sus propias recomendaciones y no debe chocar con las de otros.
-const newRecId=()=>{let id;const used=new Set(D().recomendaciones.map(r=>r.id));do{id=Date.now()*100+Math.floor(Math.random()*100);}while(used.has(id));return id;};
+const D=()=>XD();
 
-/* ---------- Página pública: diseño con cuatro perfiles ---------- */
+/* ---------- Página pública: diseño con perfiles ---------- */
 function cardsHTML(){
  const c=cfg();
  return `<section class="bl-pf" aria-labelledby="bl-pf-t"><h2 id="bl-pf-t" class="bl-pf-t">${esc(c.titulo||TITULO_DEF)}</h2><p class="bl-pf-s">Elige tu perfil para ingresar a la Bolsa Laboral de ${esc(inst().nombreCorto||inst().nombre)}.</p>
- <div class="bl-pf-g">${PERFILES.map(p=>{const f=fotoDe(p.k);return `<article class="bl-pf-c" data-bl-card="${p.k}"><div class="bl-pf-i">${f?`<img src="${esc(img(f))}" alt="" loading="lazy" decoding="async">`:`<span class="bl-pf-ic" aria-hidden="true">${sic(p.icon,64)}</span>`}</div>
-  <div class="bl-pf-b"><button type="button" class="bl-pf-btn" data-bl-perfil="${p.k}">${sic(p.icon,18)}<span>${esc(p.label)}</span></button><p>${esc(p.text)}</p></div></article>`;}).join('')}</div></section>`;
+ <div class="bl-pf-g">${PERFILES.map(p=>{const f=fotoDe(p.k);return `<article class="bl-pf-c${f?'':' no-foto'}" data-bl-card="${p.k}"><div class="bl-pf-i">${f?`<img src="${esc(img(f))}" alt="" loading="lazy" decoding="async">`:`<span class="bl-pf-ic" aria-hidden="true">${sic(p.icon,64)}</span>`}</div>
+  <span class="bl-pf-tag">${sic(p.icon,13)} ${esc(p.tag)}</span>
+  <div class="bl-pf-b"><h3>${esc(p.label)}</h3><p>${esc(p.text)}</p><button type="button" class="bl-pf-btn" data-bl-perfil="${p.k}" aria-label="${esc(p.label)}: ${esc(p.btn)}">${sic('key',16)}<span>${esc(p.btn)}</span></button></div></article>`;}).join('')}</div></section>`;
 }
 function loginModal(k){
  const p=PF(k);if(!p)return;
@@ -71,7 +64,8 @@ function loginModal(k){
   <div class="field"><label for="bl-u">${esc(p.user)}</label><input id="bl-u" name="username" required maxlength="80" autocomplete="username" ${p.user==='DNI'?'inputmode="numeric"':p.user==='RUC'?'inputmode="numeric"':''}></div>
   <div class="field"><label for="bl-p">Contraseña</label><input id="bl-p" name="password" type="password" required maxlength="72" autocomplete="current-password"></div>
   <p class="bl-lg-err" data-bl-err role="alert"></p>
-  <div class="bl-lg-a"><button class="btn" type="submit">${sic('key',16)} Ingresar</button>${k==='empresa'?'<button type="button" class="btn ghost" data-bl-reg>Registrar mi empresa</button>':''}</div></form>`,size:'sm'});
+  <p class="note" style="margin:0"><a href="#" data-pw-reset>¿Olvidaste tu contraseña?</a></p>
+  <div class="bl-lg-a"><button class="btn" type="submit">${sic('key',16)} Ingresar</button>${k==='empresa'?'<button type="button" class="btn ghost" data-bl-reg>Registrar mi empresa</button>':''}${k==='estudiante'&&window.pzRegistroEgresado?'<button type="button" class="btn ghost" data-egr-open="registro">Soy egresado: registrarme</button>':''}</div></form>`,size:'sm'});
  const form=m.el.querySelector('[data-bl-login]'),err=m.el.querySelector('[data-bl-err]');
  const reg=m.el.querySelector('[data-bl-reg]');if(reg)reg.onclick=()=>{m.close();const b=document.querySelector('.pz-mt [data-tab="e"]');if(b){b.click();b.scrollIntoView({behavior:'smooth',block:'start'});}};
  form.onsubmit=async ev=>{
@@ -105,7 +99,7 @@ R('servicios/bolsa-laboral',(...args)=>{
 });
 
 /* ---------- Intranet: pestañas adicionales de la Bolsa Laboral ---------- */
-const TAB_LIST=[['p','Panel','#/admin/ix-bolsa'],['g','Convocatorias y postulaciones','#/admin/ix-bolsa/gestion'],['e','Validación de empresas','#/admin/ix-bolsa/empresas'],['r','Padrón de estudiantes y egresados','#/admin/ix-bolsa/padron'],['s','Seguimiento de egresados','#/admin/ix-bolsa/egresados'],['c','Carga masiva','#/admin/ix-bolsa/carga'],['w','Página pública','#/admin/ix-bolsa/pagina']];
+const TAB_LIST=[['p','Panel','#/admin/ix-bolsa'],['g','Convocatorias y postulaciones','#/admin/ix-bolsa/gestion'],['e','Validación de empresas','#/admin/ix-bolsa/empresas'],['r','Padrón de estudiantes y egresados','#/admin/ix-bolsa/padron'],['s','Seguimiento de egresados','#/admin/ix-bolsa/egresados'],['c','Carga masiva','#/admin/ix-bolsa/carga'],['x','Registro de egresados','#/admin/ix-bolsa/registros'],['w','Página pública','#/admin/ix-bolsa/pagina']];
 const myTabs=a=>tabsBar(TAB_LIST,a);
 function withTabs(out,active){
  const res=typeof out==='string'?{html:out}:out;if(!res||typeof res.html!=='string')return out;
@@ -118,15 +112,12 @@ const canEditPage=()=>['admin','atencion'].includes(currentUser()?.rol);
 const baseCustom=CUSTOM['ix-bolsa'];
 CUSTOM['ix-bolsa']=(parts,q)=>{
  const u=currentUser();
- if(u&&u.rol==='docente'&&IX&&IX.db)return docenteBolsa(q);
- if(u&&u.rol==='empresa'&&IX&&IX.db){const out=baseCustom(parts,q);const res=typeof out==='string'?{html:out}:out;return Object.assign({},res,{html:res.html+empresaRecs()});}
  if(isCommunity()||!IX||!IX.db)return baseCustom(parts,q);
  const t=parts[2]||'';
  if(t==='pagina')return paginaPublica();
+ if(t==='registros'&&window.pzEgresadosPanel)return window.pzEgresadosPanel(bHead('Solicitudes de registro en línea de egresados','Registro de egresados')+myTabs('x'));
  if(t==='carga')return cargaMasiva(q);
- const out=withTabs(baseCustom(parts,q),{'':'p',gestion:'g',empresas:'e',padron:'r',egresados:'s'}[t]||'p');
- if(t==='')return Object.assign({},out,{html:out.html+adminRecs(),after:()=>{out.after&&out.after();bindAdminRecs();}});
- return out;
+ return withTabs(baseCustom(parts,q),{'':'p',gestion:'g',empresas:'e',padron:'r',egresados:'s'}[t]||'p');
 };
 
 /* ---------- Página pública (configuración) ---------- */
@@ -136,7 +127,7 @@ function paginaPublica(){
  const html=bHead('Diseño de la página pública de la Bolsa Laboral','Página pública')+myTabs('w')+`
  <form class="panel" data-bl-page><h2>Diseño de la página pública</h2><div class="pb">
   <p>Elige cómo se presenta la Bolsa Laboral en la web (<code>/#/servicios/bolsa-laboral</code> y <code>/bolsa-laboral.php</code>). El cambio se aplica al guardar y no modifica ofertas, empresas ni postulaciones.</p>
-  <div class="bl-opt">${[['actual','Diseño actual','Encabezado con las cifras de la bolsa, ofertas, registro de empresas y «¿Cómo postular?».'],['perfiles','Diseño con perfiles','Portada con cuatro tarjetas de ingreso: Estudiante/Egresado, Docente, Administrador y Empresa. Debajo se mantienen las ofertas, el registro de empresas y «¿Cómo postular?».']].map(([v,l,d])=>`<label class="bl-opt-i"><input type="radio" name="diseno" value="${v}" ${W.diseno===v?'checked':''} ${ro?'disabled':''}><span><b>${l}</b><small>${d}</small></span></label>`).join('')}</div>
+  <div class="bl-opt">${[['actual','Diseño actual','Encabezado con las cifras de la bolsa, ofertas, registro de empresas y «¿Cómo postular?».'],['perfiles','Diseño con perfiles','Portada con tres tarjetas de ingreso: Estudiante/Egresado, Administrador y Empresa. Debajo se mantienen las ofertas, el registro de empresas y «¿Cómo postular?».']].map(([v,l,d])=>`<label class="bl-opt-i"><input type="radio" name="diseno" value="${v}" ${W.diseno===v?'checked':''} ${ro?'disabled':''}><span><b>${l}</b><small>${d}</small></span></label>`).join('')}</div>
   <div class="field" style="margin-top:14px"><label for="bl-tt">Título de la portada con perfiles</label><input id="bl-tt" name="titulo" maxlength="120" value="${esc(W.titulo)}" ${ro?'disabled':''}></div>
   <h3 style="margin:18px 0 6px">Fotos de las tarjetas</h3><p class="note">Se recomienda una foto horizontal o cuadrada de al menos 800 px. Sin foto, la tarjeta muestra el ícono del perfil.</p>
   <div class="bl-ph">${PERFILES.map(p=>{const f=(W.perfiles[p.k]||{}).img||'';return `<div class="bl-ph-i"><div class="bl-pf-i">${f?`<img src="${esc(img(f))}" alt="Foto de la tarjeta ${esc(p.label)}">`:`<span class="bl-pf-ic" aria-hidden="true">${sic(p.icon,48)}</span>`}</div><b>${esc(p.label)}</b>
@@ -159,64 +150,6 @@ function paginaPublica(){
    if(saveDB()){PAGE_WORK=null;toast(`Diseño guardado: ${c.diseno==='perfiles'?'con perfiles':'actual'}.`,'ok');route();}else{for(const k of ['diseno','titulo','perfiles'])if(prev[k]===undefined)delete c[k];else c[k]=prev[k];}
   };
  }};
-}
-
-/* ---------- Docente: ofertas vigentes y recomendaciones ---------- */
-function docenteBolsa(q){
- const u=currentUser(),d=D(),doc=binding(u,'doc');const tab=q&&q.get&&q.get('tab')==='mias'?'mias':'ofertas';
- const mine=d.recomendaciones.filter(r=>r.doc===doc).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
- const ofs=vigentes();
- const head=admHead('Bolsa laboral','Ofertas vigentes y recomendaciones a estudiantes y egresados','','briefcase',[['Servicios'],['Bolsa laboral']]);
- const tabs=tabsBar([['ofertas','Ofertas vigentes','#/admin/ix-bolsa'],['mias',`Mis recomendaciones (${mine.length})`,'#/admin/ix-bolsa?tab=mias']],tab);
- const warn=doc?'':'<div class="notice warn" style="margin-bottom:14px">Tu cuenta no está vinculada a un docente de la plana académica, por eso no puedes registrar recomendaciones. Solicita a Secretaría Académica que la vincule en <b>Usuarios y roles</b>.</div>';
- let body;
- if(tab==='ofertas')body=ofs.length?`<div class="bl-of">${ofs.map(o=>{const n=mine.filter(r=>r.of===o.id).length;return `<article class="panel bl-of-c"><div class="pb"><h3>${esc(o.puesto)}</h3><p class="note">${esc(xemp(o.emp).nom)} · ${esc(o.modal)} · ${o.prog?esc(xprog(o.prog).nombre):'Cualquier programa'} · ${+o.vac||1} vacante(s) · cierra ${fdx(o.limite)}</p><p>${esc(String(o.desc||'').slice(0,240))}${String(o.desc||'').length>240?'…':''}</p>
-  <div class="bl-lg-a">${doc?`<button type="button" class="btn sm" data-bl-rec="${o.id}">${sic('star',15)} Recomendar</button>`:''}${n?`<span class="badge ok">${n} recomendado(s) por ti</span>`:''}</div></div></article>`;}).join('')}</div>`:'<div class="empty">No hay ofertas vigentes por el momento.</div>';
- else body=mine.length?`<div class="panel"><div class="tbl-wrap" style="border:0"><table class="tbl light"><thead><tr><th>Fecha</th><th>Oferta</th><th>Recomendado</th><th>Motivo</th><th></th></tr></thead><tbody>${mine.map(r=>{const o=d.ofertas.find(x=>x.id===r.of)||{};const e=d.estudiantes.find(x=>x.id===r.est)||{};return `<tr><td>${fdx(r.fecha)}</td><td><b>${esc(o.puesto||'—')}</b><br><small>${esc(xemp(o.emp).nom)}</small></td><td>${esc(e.nom||'—')}<br><small>${esc(condLabel(e))}${e.prog?' · '+esc(xprog(e.prog).cod):''}</small></td><td>${esc(r.motivo||'')}</td><td class="c"><button type="button" class="btn xs ghost" data-bl-del="${r.id}">Retirar</button></td></tr>`;}).join('')}</tbody></table></div></div>`:'<div class="empty">Aún no registras recomendaciones. Ve a «Ofertas vigentes» y presiona «Recomendar».</div>';
- return {html:head+tabs+warn+body,after:()=>{
-  document.querySelectorAll('[data-bl-rec]').forEach(b=>b.onclick=()=>recomendar(+b.dataset.blRec));
-  document.querySelectorAll('[data-bl-del]').forEach(b=>b.onclick=async()=>{const r=D().recomendaciones.find(x=>x.id===+b.dataset.blDel);if(!r)return;if(!await confirmBox('¿Retirar esta recomendación? La empresa dejará de verla.',{ok:'Retirar'}))return;
-   const list=D().recomendaciones;const i=list.indexOf(r);list.splice(i,1);if(IX.persist()){toast('Recomendación retirada.','ok');route();}else list.splice(i,0,r);});
- }};
-}
-function recomendar(ofId){
- const d=D(),u=currentUser(),doc=binding(u,'doc');const o=d.ofertas.find(x=>x.id===ofId);if(!o||!doc)return;
- const ya=new Set(d.recomendaciones.filter(r=>r.of===ofId&&r.doc===doc).map(r=>r.est));
- const people=d.estudiantes.filter(e=>['Regular','Egresado','Titulado'].includes(e.estado)&&(!o.prog||e.prog===o.prog)&&!ya.has(e.id)).sort((a,b)=>String(a.nom).localeCompare(String(b.nom)));
- const opts=list=>list.map(e=>`<option value="${e.id}">${esc(e.nom)} · ${esc(condLabel(e))} · ${esc(xprog(e.prog).cod)}</option>`).join('');
- const m=modal({title:'Recomendar para la oferta',body:`<form class="bl-lg" data-bl-recf novalidate><p><b>${esc(o.puesto)}</b><br><span class="note">${esc(xemp(o.emp).nom)}${o.prog?' · solo '+esc(xprog(o.prog).nombre):''}</span></p>
-  ${people.length?`<div class="field"><label for="bl-rq">Buscar persona</label><input id="bl-rq" type="search" placeholder="Escribe un nombre" autocomplete="off"></div>
-  <div class="field"><label for="bl-re">Estudiante o egresado</label><select id="bl-re" name="est" required size="6">${opts(people)}</select></div>
-  <div class="field"><label for="bl-rm">Motivo de la recomendación (opcional)</label><textarea id="bl-rm" name="motivo" rows="4" maxlength="500" placeholder="Ej.: Destacó en las prácticas de laboratorio y en trabajo en equipo."></textarea><div class="hint" data-bl-n>0 / 500</div></div>
-  <p class="bl-lg-err" data-bl-err role="alert"></p><div class="bl-lg-a"><button class="btn" type="submit">${sic('send',16)} Enviar recomendación</button></div>`:'<p class="notice">No hay estudiantes ni egresados disponibles para esta oferta (o ya los recomendaste a todos).</p>'}</form>`});
- const f=m.el.querySelector('[data-bl-recf]');if(!people.length)return;
- const sel=f.est,qs=f.querySelector('#bl-rq');qs.oninput=()=>{const t=nrm(qs.value);sel.innerHTML=opts(people.filter(e=>!t||nrm(e.nom).includes(t)));};
- f.motivo.oninput=()=>{f.querySelector('[data-bl-n]').textContent=`${f.motivo.value.length} / 500`;};
- f.onsubmit=ev=>{ev.preventDefault();const est=+sel.value;const err=f.querySelector('[data-bl-err]');if(!est){err.textContent='Selecciona a la persona que recomiendas.';return;}
-  const rec={id:newRecId(),of:o.id,est,doc,fecha:hoy(),motivo:f.motivo.value.trim().slice(0,500)};
-  D().recomendaciones.push(rec);
-  if(IX.persist()){m.close();toast('Recomendación enviada. La empresa ya puede verla.','ok');route();}
-  else{const list=D().recomendaciones;list.splice(list.indexOf(rec),1);err.textContent='No se pudo guardar la recomendación.';}
- };
-}
-function recsTable(rows,withCompany,canRemove){
- const d=D();
- return `<div class="tbl-wrap" style="border:0"><table class="tbl light"><thead><tr><th>Fecha</th><th>Oferta</th>${withCompany?'<th>Empresa</th>':''}<th>Recomendado</th><th>Docente</th><th>Motivo</th>${canRemove?'<th></th>':''}</tr></thead><tbody>${rows.map(r=>{const o=d.ofertas.find(x=>x.id===r.of)||{};const e=d.estudiantes.find(x=>x.id===r.est)||{};return `<tr><td>${fdx(r.fecha)}</td><td><b>${esc(o.puesto||'—')}</b></td>${withCompany?`<td>${esc(xemp(o.emp).nom)}</td>`:''}<td>${esc(e.nom||'—')}<br><small>${esc(condLabel(e))}${e.prog?' · '+esc(xprog(e.prog).cod):''}${e.correo?' · '+esc(e.correo):''}</small></td><td>${esc(docName(r.doc))}</td><td>${esc(r.motivo||'')}</td>${canRemove?`<td class="c"><button type="button" class="btn xs ghost" data-bl-adel="${r.id}">Retirar</button></td>`:''}</tr>`;}).join('')}</tbody></table></div>`;
-}
-function empresaRecs(){
- const d=D(),emp=binding(currentUser(),'emp');if(!emp)return '';
- const mine=new Set(d.ofertas.filter(o=>o.emp===emp).map(o=>o.id));const rows=d.recomendaciones.filter(r=>mine.has(r.of)).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
- return `<section class="panel" style="margin-top:16px" data-bl-emprecs><h2>Recomendaciones de docentes (${rows.length})</h2><div class="pb">${rows.length?'<p class="note">Docentes del instituto recomiendan a estas personas para sus ofertas. Pueden invitarlas a postular.</p>'+recsTable(rows,false):'<p class="note">Aún no hay recomendaciones de docentes para sus ofertas.</p>'}</div></section>`;
-}
-function adminRecs(){
- const rows=D().recomendaciones.slice().sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));const admin=currentUser()?.rol==='admin';
- // Solo el administrador las retira (por ejemplo, para poder eliminar después una oferta, un alumno o un docente).
- return `<div class="panel" style="margin-top:16px" data-bl-admrecs><h2><span>Recomendaciones de docentes (${rows.length})</span></h2><div class="pb">${rows.length?recsTable(rows,true,admin):'<p class="note">Los docentes recomiendan estudiantes y egresados desde su ingreso a la Bolsa Laboral.</p>'}</div></div>`;
-}
-function bindAdminRecs(){
- document.querySelectorAll('[data-bl-adel]').forEach(b=>b.onclick=async()=>{const list=D().recomendaciones;const r=list.find(x=>x.id===+b.dataset.blAdel);if(!r)return;
-  if(!await confirmBox('¿Retirar esta recomendación? La empresa y el docente dejarán de verla.',{ok:'Retirar'}))return;
-  const i=list.indexOf(r);list.splice(i,1);IX.logAct('Retirar recomendación','Bolsa laboral',`Oferta ${r.of} · persona ${r.est}`);if(IX.persist()){toast('Recomendación retirada.','ok');route();}else list.splice(i,0,r);});
 }
 
 /* ---------- Carga masiva por Excel: empresas y ofertas ---------- */

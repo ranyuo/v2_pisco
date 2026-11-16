@@ -48,8 +48,6 @@ final class PortalDomain
             }
         }
         $a=&$new['academico'];$o=$old['academico'];
-        // Recomendaciones de docentes en la Bolsa Laboral (colección nueva: las bases anteriores no la tienen).
-        $a['recomendaciones']??=[];$o['recomendaciones']??=[];
         foreach(self::changedRows($o['estudiantes'],$a['estudiantes'],'academico.estudiantes') as $r){
             self::required($r,['dni','nom','prog','periodo','ciclo','sec','turno','estado'],'Alumno');
             if(!preg_match('/^[0-9]{8}$/',(string)$r['dni']))throw new PortalError(422,'El DNI del alumno debe tener ocho dígitos.');
@@ -112,6 +110,9 @@ final class PortalDomain
             self::required($r,['emp','puesto','desc','req','modal','vac','limite','estado'],'Oferta');$company=self::foreign($a['empresas'],$r['emp'],'Empresa');
             if(($r['estado']??'')==='Publicada'&&!($company['validada']??false))throw new PortalError(422,'La empresa debe estar validada antes de publicar la oferta.');
             if(!is_numeric($r['vac'])||$r['vac']<1||$r['vac']>50)throw new PortalError(422,'Número de vacantes no válido.');
+            // Una oferta vencida no se vuelve a publicar: el cierre automático la cerraría y reenviaría los avisos.
+            $priorOffer=PortalPolicy::find($o['ofertas'],'id',$r['id']);
+            if(($r['estado']??'')==='Publicada'&&($priorOffer['estado']??'')!=='Publicada'&&is_string($r['limite']??null)&&$r['limite']<date('Y-m-d'))throw new PortalError(422,'La fecha límite de la oferta ya pasó. Actualízala antes de publicarla.');
             if(PortalPolicy::role($user)==='empresa'&&!($company['validada']??false))throw new PortalError(403,'La empresa necesita aprobación institucional antes de publicar ofertas.');
         }
         foreach(self::changedRows($o['perfilesLab'],$a['perfilesLab'],'academico.perfilesLab') as $profile){self::foreign($a['estudiantes'],$profile['est']??null,'Alumno');if(!empty($profile['cv'])&&(($profile['cv']['type']??'')!=='application/pdf'||($profile['cv']['size']??0)>5*1024*1024))throw new PortalError(422,'El CV debe ser un PDF de hasta 5 MB.');}
@@ -124,26 +125,7 @@ final class PortalDomain
             foreach($a['postulaciones'] as $other)if($other['id']!==$r['id']&&$other['est']===$r['est']&&$other['of']===$r['of'])throw new PortalError(422,'Ya existe una postulación a esa oferta.');
             if(!in_array($r['estado'],['Recibida','En revisión','Seleccionado','No seleccionado'],true))throw new PortalError(422,'Estado de postulación no válido.');
         }
-        if(!array_is_list($a['recomendaciones']))throw new PortalError(422,'Recomendaciones no válidas.');
-        $recIds=[];foreach($a['recomendaciones'] as $r){
-            if(!is_array($r)||!is_int($r['id']??null)||$r['id']<1||isset($recIds[$r['id']]))throw new PortalError(422,'Identificador de recomendación no válido o duplicado.');$recIds[$r['id']]=true;
-        }
-        foreach(self::changedRows($o['recomendaciones'],$a['recomendaciones'],'academico.recomendaciones') as $r){
-            self::required($r,['of','est','doc','fecha'],'Recomendación');
-            foreach(['of','est','doc'] as $field)if(!is_int($r[$field]))throw new PortalError(422,'Vínculo de la recomendación no válido.');
-            $offer=self::foreign($a['ofertas'],$r['of'],'Oferta');$student=self::foreign($a['estudiantes'],$r['est'],'Alumno');self::foreign($a['docentes'],$r['doc'],'Docente');
-            if(!in_array($student['estado']??'',['Regular','Egresado','Titulado'],true))throw new PortalError(422,'Solo se recomienda a estudiantes regulares, egresados o titulados.');
-            $isNew=!PortalPolicy::find($o['recomendaciones'],'id',$r['id']);
-            if($isNew&&(($offer['estado']??'')!=='Publicada'||($offer['limite']??'')<date('Y-m-d')))throw new PortalError(422,'Solo se recomienda para ofertas publicadas y vigentes.');
-            $date=is_string($r['fecha'])?DateTimeImmutable::createFromFormat('!Y-m-d',$r['fecha']):false;
-            if(!$date||$date->format('Y-m-d')!==$r['fecha']||($isNew&&$r['fecha']!==date('Y-m-d')))throw new PortalError(422,'Fecha de la recomendación no válida.');
-            if($isNew&&!empty($offer['prog'])&&(int)$offer['prog']!==(int)$student['prog'])throw new PortalError(422,'La oferta corresponde a otro programa de estudios.');
-            if($isNew&&!(self::foreign($a['empresas'],$offer['emp'],'Empresa')['validada']??false))throw new PortalError(422,'La empresa de la oferta no está validada.');
-            $reason=$r['motivo']??'';if(!is_string($reason)||preg_match_all('/./us',$reason)>500)throw new PortalError(422,'El motivo de la recomendación admite hasta 500 caracteres.');
-            if(array_diff(array_keys($r),['id','of','est','doc','fecha','motivo']))throw new PortalError(422,'La recomendación tiene campos no permitidos.');
-            foreach($a['recomendaciones'] as $other)if($other['id']!==$r['id']&&$other['of']===$r['of']&&$other['est']===$r['est']&&$other['doc']===$r['doc'])throw new PortalError(422,'Ya recomendaste a esa persona para esta oferta.');
-        }
-        foreach(['programas'=>['estudiantes'=>'prog','uds'=>'prog','modulos'=>'prog','ambientes'=>'prog','sesiones'=>'prog','ofertas'=>'prog'],'estudiantes'=>['certs'=>'est','titulos'=>'est','notas'=>'est','perfilesLab'=>'est','postulaciones'=>'est','recomendaciones'=>'est'],'modulos'=>['certs'=>'mod','uds'=>'mod'],'uds'=>['sesiones'=>'ud'],'docentes'=>['sesiones'=>'doc','recomendaciones'=>'doc'],'ambientes'=>['sesiones'=>'amb'],'empresas'=>['ofertas'=>'emp'],'ofertas'=>['postulaciones'=>'of','recomendaciones'=>'of']] as $collection=>$refs){
+        foreach(['programas'=>['estudiantes'=>'prog','uds'=>'prog','modulos'=>'prog','ambientes'=>'prog','sesiones'=>'prog','ofertas'=>'prog'],'estudiantes'=>['certs'=>'est','titulos'=>'est','notas'=>'est','perfilesLab'=>'est','postulaciones'=>'est'],'modulos'=>['certs'=>'mod','uds'=>'mod'],'uds'=>['sesiones'=>'ud'],'docentes'=>['sesiones'=>'doc'],'ambientes'=>['sesiones'=>'amb'],'empresas'=>['ofertas'=>'emp'],'ofertas'=>['postulaciones'=>'of']] as $collection=>$refs){
             foreach($o[$collection] as $r)if(!PortalPolicy::find($a[$collection],'id',$r['id']))foreach($refs as $related=>$field)if(PortalPolicy::find($a[$related],$field,$r['id']))throw new PortalError(422,'No se puede eliminar '.$collection.' porque tiene registros relacionados.');
         }
         foreach(['certs'=>'cert','titulos'=>'titulo'] as $collection=>$type)foreach($o[$collection] as $record)if(!PortalPolicy::find($a[$collection],'id',$record['id']))foreach($a['docs'] as $doc)if(($doc['tipo']??'')===$type&&($doc['ref']??null)===($type==='cert'?$record['est']:$record['id'])&&($doc['valido']??true))throw new PortalError(422,'El registro tiene documentos emitidos. Anula el documento antes de retirar su origen.');
@@ -196,10 +178,10 @@ final class PortalDomain
         if($target!==null){$data['certificados'][$target]+=array_diff_key($canonical,['id'=>1,'estado'=>1]);return;}
         $data['certificados'][]=['estado'=>'Válido',...$canonical];
     }
-    public static function staff(array &$data,string $text,string $view): void
+    public static function staff(array &$data,string $text,string $view,array $roles=['admin','adm']): void
     {
         $notifs=&$data['academico']['notifs'];$next=max([0,...array_map(fn($n)=>(int)$n['id'],$notifs)])+1;
-        foreach(['admin','adm'] as $role)$notifs[]=['id'=>$next++,'to'=>'r:'.$role,'txt'=>$text,'fecha'=>date('Y-m-d H:i'),'go'=>$view,'leido'=>[]];$notifs=array_slice($notifs,-3000);
+        foreach($roles as $role)$notifs[]=['id'=>$next++,'to'=>'r:'.$role,'txt'=>$text,'fecha'=>date('Y-m-d H:i'),'go'=>$view,'leido'=>[]];$notifs=array_slice($notifs,-3000);
     }
     public static function notifications(array $old,array &$new,array $accounts): void
     {
@@ -207,8 +189,6 @@ final class PortalDomain
         $notify=function(string $binding,string $text,string $view)use(&$a,&$next,$accounts){foreach($accounts as $u)if(($u['vin']??'')===$binding)$a['notifs'][]=['id'=>$next++,'to'=>'u:'.$u['ixId'],'txt'=>$text,'fecha'=>date('Y-m-d H:i'),'go'=>$view,'leido'=>[]];};
         foreach(['certs'=>'certificados','titulos'=>'titulos'] as $key=>$view)foreach(self::changedRows($old['academico'][$key],$a[$key],'academico.'.$key) as $r)$notify('est:'.$r['est'],'Se actualizó tu registro de '.($key==='certs'?'certificación modular':'titulación').'.',$view);
         foreach(self::changedRows($old['academico']['postulaciones'],$a['postulaciones'],'academico.postulaciones') as $r){$offer=PortalPolicy::find($a['ofertas'],'id',$r['of']);$notify('est:'.$r['est'],'Estado de tu postulación: '.$r['estado'],'bolsa');if($offer)$notify('emp:'.$offer['emp'],'Se actualizó una postulación a '.$offer['puesto'],'bolsa');}
-        // Recomendación nueva de un docente: avisa a la empresa de la oferta y a la persona recomendada.
-        foreach(self::changedRows($old['academico']['recomendaciones']??[],$a['recomendaciones']??[],'academico.recomendaciones') as $r)if(!PortalPolicy::find($old['academico']['recomendaciones']??[],'id',$r['id'])&&($offer=PortalPolicy::find($a['ofertas'],'id',$r['of']))){$notify('emp:'.$offer['emp'],'Un docente recomendó a un postulante para '.$offer['puesto'],'bolsa');$notify('est:'.$r['est'],'Un docente te recomendó para la oferta '.$offer['puesto'],'bolsa');}
         // Aviso de validación solo cuando cambia la validación (no al actualizar los datos de contacto).
         foreach(self::changedRows($old['academico']['empresas'],$a['empresas'],'academico.empresas') as $r){$before=PortalPolicy::find($old['academico']['empresas'],'id',$r['id']);if(!$before||($before['estadoVal']??null)!==($r['estadoVal']??null)||($before['validada']??null)!==($r['validada']??null))$notify('emp:'.$r['id'],'Estado de validación: '.($r['estadoVal']??'Pendiente'),'bolsa');}
         foreach($a['publicados'] as $group=>$published)if(!PortalPolicy::equal($old['academico']['publicados'][$group]??null,$published)){

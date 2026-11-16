@@ -10,6 +10,8 @@ try {
         '/libro-de-reclamaciones.php'=>'servicios/libro-de-reclamaciones',
         '/bolsa-laboral.php'=>'servicios/bolsa-laboral',
         '/certificados.php'=>'servicios/consulta-certificados',
+        '/horarios.php'=>'servicios/horarios',
+        '/cv-docente.php'=>'servicios/cv-docente',
     ];
     $publicService = defined('PORTAL_PUBLIC_SERVICE') ? PORTAL_PUBLIC_SERVICE : null;
     if (!in_array($path, ['/', '/index.php'], true) && (!$publicService || ($serviceEntries[$path]??null)!==$publicService)) throw new PortalError(404, 'Página no encontrada.');
@@ -24,6 +26,9 @@ try {
         // Cerrar sesión no necesita un cuerpo JSON; la protección CSRF ya se comprobó.
         if ($route === 'api/session' && $method === 'DELETE') portal_json($app->logout());
         $input = $method === 'GET' ? [] : $app->input();
+        // Recuperar la contraseña no requiere sesión.
+        if ($route === 'api/clave/codigo' && $method === 'POST') portal_json($app->requestPasswordReset($input));
+        if ($route === 'api/clave/restablecer' && $method === 'POST') portal_json($app->resetPassword($input));
         // Con una contraseña temporal solo se permite cargar el portal, cambiarla o cerrar sesión.
         if (!in_array($route, ['api/portal', 'api/password', 'api/session', 'api/visitas', 'api/eventos'], true) || ($route === 'api/portal' && $method !== 'GET')) {
             if (!empty($app->user()['cambiarClave'])) throw new PortalError(403, 'Cambia tu contraseña temporal antes de continuar.');
@@ -33,6 +38,12 @@ try {
         if ($route === 'api/cuentas' && $method === 'POST') portal_json($app->accountOperation($input));
         if ($route === 'api/password' && $method === 'POST') { $app->changePassword($input); portal_json(['ok'=>true]); }
         if ($route === 'api/empresas' && $method === 'POST') portal_json($app->registerCompany($input),201);
+        // Registro en línea de egresados (Bolsa Laboral): registro, código de verificación y revisión del personal.
+        if ($route === 'api/egresados/registro' && $method === 'POST') portal_json($app->registerGraduate($input),201);
+        if ($route === 'api/egresados/codigo' && $method === 'POST') portal_json($app->resendGraduateCode($input));
+        if ($route === 'api/egresados/verificar' && $method === 'POST') portal_json($app->verifyGraduate($input));
+        if ($route === 'api/egresados/solicitudes' && $method === 'GET') portal_json($app->graduateRequests());
+        if ($route === 'api/egresados/solicitudes' && $method === 'POST') portal_json($app->decideGraduate($input));
         if ($route === 'api/visitas' && $method === 'POST') portal_json($app->track($input));
         if ($route === 'api/portal' && $method === 'GET') portal_json($app->bootstrap());
         if ($route === 'api/notificaciones' && $method === 'GET') portal_json($app->mailStatus());
@@ -58,6 +69,8 @@ try {
     if($publicService)$bootstrap['standaloneService']=$publicService;
     header('Content-Type: text/html; charset=utf-8');
     require dirname(__DIR__).'/portal-private/views/portal.php';
+    // Tareas posteriores a la respuesta (p. ej. cerrar ofertas vencidas detectadas al cargar la página).
+    portal_finish_deferred();
 } catch (Throwable $error) {
     portal_error($error, $route !== '');
 }
