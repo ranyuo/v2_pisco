@@ -110,6 +110,9 @@ final class PortalDomain
             self::required($r,['emp','puesto','desc','req','modal','vac','limite','estado'],'Oferta');$company=self::foreign($a['empresas'],$r['emp'],'Empresa');
             if(($r['estado']??'')==='Publicada'&&!($company['validada']??false))throw new PortalError(422,'La empresa debe estar validada antes de publicar la oferta.');
             if(!is_numeric($r['vac'])||$r['vac']<1||$r['vac']>50)throw new PortalError(422,'Número de vacantes no válido.');
+            // Una oferta vencida no se vuelve a publicar: el cierre automático la cerraría y reenviaría los avisos.
+            $priorOffer=PortalPolicy::find($o['ofertas'],'id',$r['id']);
+            if(($r['estado']??'')==='Publicada'&&($priorOffer['estado']??'')!=='Publicada'&&is_string($r['limite']??null)&&$r['limite']<date('Y-m-d'))throw new PortalError(422,'La fecha límite de la oferta ya pasó. Actualízala antes de publicarla.');
             if(PortalPolicy::role($user)==='empresa'&&!($company['validada']??false))throw new PortalError(403,'La empresa necesita aprobación institucional antes de publicar ofertas.');
         }
         foreach(self::changedRows($o['perfilesLab'],$a['perfilesLab'],'academico.perfilesLab') as $profile){self::foreign($a['estudiantes'],$profile['est']??null,'Alumno');if(!empty($profile['cv'])&&(($profile['cv']['type']??'')!=='application/pdf'||($profile['cv']['size']??0)>5*1024*1024))throw new PortalError(422,'El CV debe ser un PDF de hasta 5 MB.');}
@@ -175,10 +178,10 @@ final class PortalDomain
         if($target!==null){$data['certificados'][$target]+=array_diff_key($canonical,['id'=>1,'estado'=>1]);return;}
         $data['certificados'][]=['estado'=>'Válido',...$canonical];
     }
-    public static function staff(array &$data,string $text,string $view): void
+    public static function staff(array &$data,string $text,string $view,array $roles=['admin','adm']): void
     {
         $notifs=&$data['academico']['notifs'];$next=max([0,...array_map(fn($n)=>(int)$n['id'],$notifs)])+1;
-        foreach(['admin','adm'] as $role)$notifs[]=['id'=>$next++,'to'=>'r:'.$role,'txt'=>$text,'fecha'=>date('Y-m-d H:i'),'go'=>$view,'leido'=>[]];$notifs=array_slice($notifs,-3000);
+        foreach($roles as $role)$notifs[]=['id'=>$next++,'to'=>'r:'.$role,'txt'=>$text,'fecha'=>date('Y-m-d H:i'),'go'=>$view,'leido'=>[]];$notifs=array_slice($notifs,-3000);
     }
     public static function notifications(array $old,array &$new,array $accounts): void
     {

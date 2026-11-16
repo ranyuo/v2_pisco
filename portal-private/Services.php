@@ -30,7 +30,7 @@ final class PortalServices
         foreach(['mensajes','reclamos','expedientes'] as $collection)if($user['rol']!=='admin')foreach($old[$collection] as $r)if(!PortalPolicy::find($new[$collection],'id',$r['id']))throw new PortalError(403,'No puedes eliminar registros originales.');
         foreach(['inst','redes','seo','whatsapp','limites','mpv','lr','bolsa','contadores'] as $key)if(isset($old['config'][$key])&&(!isset($new['config'][$key])||!is_array($new['config'][$key])))throw new PortalError(422,'Configuración incompleta: '.$key.'.');
         foreach([[$new['config']['lr']['correo']??'','Reclamos'],[$new['config']['correoReclamos']??'','Reclamos'],[$new['config']['bolsa']['correo']??'','Bolsa Laboral']] as [$email,$label])if(!is_string($email)||($email!==''&&(strlen($email)>254||!filter_var($email,FILTER_VALIDATE_EMAIL))))throw new PortalError(422,'Correo receptor no válido: '.$label.'.');
-        // Bolsa Laboral: diseño de la página pública («actual» o «perfiles», con cuatro tarjetas de ingreso) y sus fotos.
+        // Bolsa Laboral: diseño de la página pública («actual» o «perfiles», con tres tarjetas de ingreso) y sus fotos.
         $bolsa=$new['config']['bolsa']??[];
         if(!PortalPolicy::equal($old['config']['bolsa']??null,$bolsa)){
             if(isset($bolsa['diseno'])&&!in_array($bolsa['diseno'],['actual','perfiles'],true))throw new PortalError(422,'Diseño de la Bolsa Laboral no válido.');

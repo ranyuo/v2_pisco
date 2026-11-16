@@ -58,7 +58,7 @@ trait PortalRecovery
     /** Paso 1: se envía un código al correo registrado de la cuenta. La respuesta es la misma exista o no la cuenta. */
     public function requestPasswordReset(array $input): array
     {
-        $this->rate('password-reset',5,300);
+        $this->rate('password-reset',10,300);
         $username=strtolower(trim((string)($input['usuario']??'')));
         if($username===''||strlen($username)>80)throw new PortalError(422,'Escribe tu usuario (DNI, RUC o usuario del instituto).');
         $sent=$this->transaction(function()use($username){
@@ -77,7 +77,7 @@ trait PortalRecovery
             return ['id'=>(int)$user['id']];
         })['id'];
         if($sent)portal_defer(fn()=>$this->processMail(3,hash('sha256','cuentas|'.$sent)));
-        return ['ok'=>true,'minutos'=>self::RESET_MINUTES];
+        return ['ok'=>true,'minutos'=>self::RESET_MINUTES,'correoActivo'=>$this->mailReady()];
     }
 
     /** Paso 2: código y nueva contraseña. Cierra las sesiones abiertas y desbloquea la cuenta. */
@@ -95,10 +95,10 @@ trait PortalRecovery
             if(!$user)return ['error'=>$generic];
             $r=$db->prepare('SELECT *,expires_at<NOW() AS expired FROM pisco_password_resets WHERE user_id=? AND used_at IS NULL ORDER BY id DESC LIMIT 1 FOR UPDATE');$r->execute([$user['id']]);$reset=$r->fetch();
             if(!$reset||(int)$reset['expired']||(int)$reset['attempts']>=self::RESET_ATTEMPTS)return ['error'=>$generic];
+            // Mismo mensaje en todos los casos: no revela si la cuenta existe ni si tiene un código pendiente.
             if(!hash_equals($reset['code_hash'],hash('sha256',$reset['id'].'|'.$code))){
                 $db->prepare('UPDATE pisco_password_resets SET attempts=attempts+1 WHERE id=?')->execute([$reset['id']]);
-                $left=self::RESET_ATTEMPTS-1-(int)$reset['attempts'];
-                return ['error'=>$left>0?"El código no es correcto. Te quedan $left intento(s).":'Superaste los intentos permitidos. Solicita un código nuevo.'];
+                return ['error'=>$generic];
             }
             $db->prepare('UPDATE pisco_password_resets SET used_at=NOW() WHERE id=?')->execute([$reset['id']]);
             $db->prepare('UPDATE pisco_users SET password=?,auth_version=auth_version+1,login_failures=0,locked_until=NULL WHERE id=?')->execute([password_hash($password,PASSWORD_DEFAULT),$user['id']]);

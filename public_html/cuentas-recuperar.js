@@ -14,7 +14,7 @@ S.textContent=`.pwr-code{font:700 26px/1 ui-monospace,monospace;letter-spacing:.
 document.head.appendChild(S);
 
 function openReset(prefill){
- let user=prefill||'';let minutes=15;
+ let user=prefill||'';let minutes=15;let mailOn=true;
  const m=modal({title:'Restablecer contraseña',size:'sm',body:'<div data-pwr></div>'});const box=m.el.querySelector('[data-pwr]');
  const show=(html,bind)=>{box.innerHTML=html;bind();const f=box.querySelector('input:not([type=checkbox])');if(f)f.focus();};
  const step1=()=>show(`<form data-pwr1 novalidate><p style="margin-top:0">Escribe tu usuario. Te enviaremos un código de 6 dígitos al correo registrado en tu cuenta.</p>
@@ -25,9 +25,9 @@ function openReset(prefill){
    box.querySelector('[data-pwr-have]').onclick=()=>{user=f.u.value.trim();step2(false);};
    f.onsubmit=async ev=>{ev.preventDefault();err.textContent='';user=f.u.value.trim();if(!user){err.textContent='Escribe tu usuario.';return;}
     const b=f.querySelector('[type=submit]');b.disabled=true;
-    try{const r=await api('/api/clave/codigo',{usuario:user});minutes=r.minutos||15;step2(true);}catch(e){err.textContent=e.message;b.disabled=false;}};
+    try{const r=await api('/api/clave/codigo',{usuario:user});minutes=r.minutos||15;mailOn=r.correoActivo!==false;step2(true);}catch(e){err.textContent=e.message;b.disabled=false;}};
   });
- const step2=sent=>show(`<form data-pwr2 novalidate>${sent?`<p style="margin-top:0">Si el usuario <b>${esc(user)}</b> tiene un correo registrado, te enviamos un código. Vence en ${minutes} minutos; revisa también tu carpeta de spam.</p>`:''}
+ const step2=sent=>show(`<form data-pwr2 novalidate>${sent?`<p style="margin-top:0">Si el usuario <b>${esc(user)}</b> tiene un correo registrado, te enviamos un código. Vence en ${minutes} minutos; revisa también tu carpeta de spam.</p>${mailOn?'':'<p class="notice warn">El envío de correos del instituto aún no está activo: el código no llegará. Restablece tu contraseña en la institución.</p>'}`:''}
   <div class="field"><label for="pwr-u2">Usuario</label><input id="pwr-u2" name="u" autocomplete="username" maxlength="80" value="${esc(user)}" required></div>
   <div class="field"><label for="pwr-c">Código</label><input id="pwr-c" name="c" class="pwr-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required></div>
   <div class="field"><label for="pwr-p">Nueva contraseña</label><input id="pwr-p" name="p" type="password" minlength="12" maxlength="72" autocomplete="new-password" required><div class="hint">Mínimo 12 caracteres.</div></div>

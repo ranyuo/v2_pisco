@@ -44,6 +44,13 @@ $db->exec("UPDATE pisco_state SET data=JSON_SET(data,'$.academico.ofertas[2].lim
 $app->bootstrap();
 verify(array_column(json_decode($db->query('SELECT data FROM pisco_state WHERE id=1')->fetchColumn(),true)['academico']['ofertas'],'estado','id')[3]==='Cerrada','Loading the portal also closes expired offers when no cron runs');
 
+// Una oferta vencida no se vuelve a publicar (el cierre automático la cerraría y reenviaría los avisos).
+$admin();$offers=$app->bootstrap()['data']['academico']['ofertas'];
+$re=array_map(fn($o)=>$o['id']===1?[...$o,'estado'=>'Publicada']:$o,$offers);
+refuses(fn()=>saveAcad($app,'ofertas',$re),422,'fecha límite','Republishing an expired offer is refused');
+$re=array_map(fn($o)=>$o['id']===1?[...$o,'estado'=>'Publicada','limite'=>date('Y-m-d',strtotime('+5 days'))]:$o,$offers);
+saveAcad($app,'ofertas',$re);verify(array_column($app->bootstrap()['data']['academico']['ofertas'],'estado','id')[1]==='Publicada','An offer can be republished with a new deadline');
+$app->logout();
 // 2. Recuperación de contraseña.
 $new='Nueva-Clave-Segura-2026';
 refuses(fn()=>$app->requestPasswordReset(['usuario'=>'']),422,'usuario','User is required');$free();
@@ -59,6 +66,8 @@ refuses(fn()=>$app->resetPassword(['usuario'=>'71000001','codigo'=>$wrong,'passw
 refuses(fn()=>$app->resetPassword(['usuario'=>'71000001','codigo'=>$sent,'password'=>'corta','password_confirmation'=>'corta']),422,'12 caracteres','Short password rejected');$free();
 refuses(fn()=>$app->resetPassword(['usuario'=>'71000001','codigo'=>$sent,'password'=>$new,'password_confirmation'=>'otra-cosa-distinta']),422,'coincidir','Confirmation must match');$free();
 refuses(fn()=>$app->resetPassword(['usuario'=>'99999999','codigo'=>$sent,'password'=>$new,'password_confirmation'=>$new]),422,'no es correcto o ya venció','Unknown user gets the generic message');$free();
+$msg=function(string $u)use($app,$new){try{$app->resetPassword(['usuario'=>$u,'codigo'=>'000001','password'=>$new,'password_confirmation'=>$new]);}catch(PortalError $e){return $e->getMessage();}return '';};
+verify($msg('71000001')===$msg('99999999'),'A wrong code gives the same message for existing and unknown accounts');$free();
 // Cuenta bloqueada por intentos fallidos: el restablecimiento la desbloquea.
 for($i=0;$i<5;$i++){try{$app->login(['username'=>'71000001','password'=>'equivocada-'.$i]);}catch(PortalError){}$db->exec("DELETE FROM pisco_rate_limits WHERE rate_key NOT LIKE '".PortalApp::loginFailPrefix('71000001')."%'");}
 refuses(fn()=>$app->login(['username'=>'71000001','password'=>$password]),423,'bloqueada','Account is locked after failed attempts');

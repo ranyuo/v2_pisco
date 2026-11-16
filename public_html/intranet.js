@@ -5,10 +5,10 @@
    /bolsa-laboral.php, /certificados.php, /horarios.php y /cv-docente.php. */
 'use strict';
 const INTRANET_WEBSITE=(portalBootstrap.scope&&portalBootstrap.scope.website)||'https://iestppisco.edu.pe/';
-MODULES.dashboard='Mi panel';MODULES.docentes='Personal docente';MODULES.cvdocente='CV docente';MODULES.config='Configuración de la intranet';MODULES['ix-certificados']='Certificación modular';MODULES['ix-titulos']='Grados y títulos';MODULES['ix-horarios']='Horarios';
+MODULES.dashboard='Mi panel';MODULES.docentes='Personal docente';MODULES.cvdocente='CV docente';MODULES.config='Configuración de la intranet';MODULES['ix-certificados']='Certificación modular';MODULES['ix-titulos']='Grados y títulos';MODULES['ix-horarios']='Horarios';MODULES.certificados='Verificación de documentos';
 NAV_GROUPS.splice(0,NAV_GROUPS.length,
  ['Inicio',[['dashboard','home']]],
- ['Gestión académica',[['ix-horarios','calendar'],['ix-certificados','award'],['ix-titulos','grad']]],
+ ['Gestión académica',[['ix-horarios','calendar'],['ix-certificados','award'],['ix-titulos','grad'],['certificados','shield']]],
  ['Gestión administrativa',[['expedientes','inbox'],['reclamos','book'],['ix-bolsa','briefcase']]],
  ['Perfiles profesionales',[['cvdocente','user']]],
  ['Catálogos de soporte',[['programas','grad'],['ix-alumnos','users'],['docentes','users'],['ix-config','gear']]],
@@ -54,10 +54,25 @@ CUSTOM.dashboard=function(){
 };
 // Configuración de la intranet sin herramientas de publicación de la web institucional.
 // (El correo SMTP y la consulta de DNI/RUC se agregan desde mail-settings.js y document-lookup.js.)
-CUSTOM.config=()=>singletonForm({title:'Configuración de la intranet',icon:'gear',sub:'Identidad de la aplicación y contacto de los servicios.',
- get:()=>({nombre:inst().nombre,nombreCorto:inst().nombreCorto,telefono:inst().telefono,correo:inst().correo,direccion:inst().direccion,horario:inst().horario,correoMesaPartes:DB.config.mpv?.correo||'',correoReclamos:DB.config.correoReclamos||'',correoBolsa:DB.config.bolsa?.correo||''}),
- fields:[{n:'nombre',l:'Nombre de la institución',req:true,full:true},{n:'nombreCorto',l:'Nombre corto',req:true},{n:'telefono',l:'Teléfono'},{n:'correo',l:'Correo de contacto',t:'email',req:true},{n:'direccion',l:'Dirección',full:true},{n:'horario',l:'Horario de atención',full:true},{n:'correoMesaPartes',l:'Correo receptor de Mesa de Partes',t:'email',req:true,max:254,hint:'Destino de los avisos de nuevos trámites.'},{n:'correoReclamos',l:'Correo responsable de reclamos',t:'email'},{n:'correoBolsa',l:'Correo responsable de Bolsa Laboral',t:'email'}],
- onSave:(w,er)=>{if(Object.keys(er).length)return;for(const key of ['nombre','nombreCorto','telefono','correo','direccion','horario'])DB.config.inst[key]=w[key];DB.config.mpv=DB.config.mpv||{};DB.config.mpv.correo=w.correoMesaPartes.trim();DB.config.correoReclamos=w.correoReclamos;DB.config.lr=DB.config.lr||{};DB.config.lr.correo=w.correoReclamos;DB.config.bolsa.correo=w.correoBolsa.trim();}
+const INST_KEYS=['nombre','nombreCorto','logoSigla','logo','direccion','distrito','region','telefono','telefonoNota','correo','horario','horarioSab','ruc','codigoModular','fechaCreacion','normaCreacion'];
+CUSTOM.config=()=>singletonForm({title:'Configuración de la intranet',icon:'gear',sub:'Datos institucionales que usan los documentos emitidos y los servicios, correos receptores y límites del Libro de reclamaciones.',
+ get:()=>Object.assign({},...INST_KEYS.map(k=>({[k]:inst()[k]??''})),{correoMesaPartes:DB.config.mpv?.correo||'',correoReclamos:DB.config.correoReclamos||'',correoBolsa:DB.config.bolsa?.correo||'',limDesc:DB.config.limites?.descripcion||1500,limPed:DB.config.limites?.pedido||1000}),
+ fields:[{n:'nombre',l:'Denominación oficial',req:true,full:true},{n:'nombreCorto',l:'Nombre corto / siglas',req:true},{n:'logoSigla',l:'Texto del logotipo generado',max:10},
+  {n:'logo',l:'Logotipo oficial (se usa en la intranet y en los documentos emitidos)',t:'image',full:true},
+  {n:'direccion',l:'Dirección',req:true,full:true},{n:'distrito',l:'Distrito',max:80},{n:'region',l:'Región (departamento)',max:80,hint:'Se usa en los títulos emitidos y en el pie de la intranet.'},
+  {n:'telefono',l:'Teléfono',req:true},{n:'telefonoNota',l:'Detalle del teléfono'},{n:'correo',l:'Correo institucional',t:'email'},{n:'horario',l:'Horario de atención',req:true},{n:'horarioSab',l:'Horario de sábados'},
+  {n:'ruc',l:'RUC'},{n:'codigoModular',l:'Código modular'},{n:'fechaCreacion',l:'Fecha de creación',t:'date',req:true},{n:'normaCreacion',l:'Norma de creación'},
+  {n:'correoMesaPartes',l:'Correo receptor de Mesa de Partes',t:'email',req:true,max:254,hint:'Destino de los avisos de nuevos trámites.'},
+  {n:'correoReclamos',l:'Correo receptor del Libro de Reclamaciones (parámetro protegido)',t:'email',req:true,ro:()=>currentUser().rol!=='admin'},
+  {n:'correoBolsa',l:'Correo responsable de Bolsa Laboral',t:'email'},
+  {n:'limDesc',l:'Límite de caracteres: descripción del reclamo',t:'number',min:200},{n:'limPed',l:'Límite de caracteres: pedido del reclamo',t:'number',min:100}],
+ onSave:(w,er)=>{if(Object.keys(er).length)return;const C=DB.config;const oldLogo=C.inst.logo;
+  const reclamos=String(w.correoReclamos||'').trim();if(C.correoReclamos!==reclamos)audit('Cambio de parámetro protegido','Configuración','Correo del Libro de Reclamaciones',`${C.correoReclamos||'—'} → ${reclamos}`);
+  INST_KEYS.forEach(k=>C.inst[k]=typeof w[k]==='string'?w[k].trim():w[k]);
+  // El logotipo de los documentos emitidos sigue al logotipo institucional si era el mismo.
+  if(oldLogo!==w.logo&&DB.academico?.cfg?.docs?.logoIzq?.src===oldLogo){const preview=document.querySelector('[data-img=logo] img');DB.academico.cfg.docs.logoIzq=w.logo?{src:w.logo,w:preview?.naturalWidth||240,h:preview?.naturalHeight||310}:null;}
+  C.mpv=C.mpv||{};C.mpv.correo=String(w.correoMesaPartes||'').trim();C.correoReclamos=reclamos;C.lr=C.lr||{};C.lr.correo=reclamos;C.bolsa.correo=String(w.correoBolsa||'').trim();
+  C.limites={...(C.limites||{}),descripcion:+w.limDesc||1500,pedido:+w.limPed||1000};}
 });
 // El catálogo de programas es soporte académico, sin perfiles promocionales de la web.
 if(SPECS.programas){

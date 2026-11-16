@@ -20,6 +20,8 @@ $change(function(&$d){$d['config']['inst']['telefono']='056 000000';});
 verify($app->bootstrap()['data']['config']['inst']['telefono']==='056 000000','Institution data is still editable');
 refuses(fn()=>PortalPolicy::validateRoles(['secretaria'=>['label'=>'Secretaría','mods'=>['dashboard','noticias']]]),422,'ámbito','Roles cannot enable modules outside the intranet');
 verify(!PortalPolicy::can(['rol'=>'admin'],'noticias')&&PortalPolicy::can(['rol'=>'admin'],'ix-bolsa'),'Even the administrator only has intranet modules');
+verify(!in_array('ix-bolsa',PortalPolicy::defaults()['roles']['docente']['mods'],true),'The teacher role no longer offers the Bolsa Laboral module');
+refuses(fn()=>PortalPolicy::validateRoles(['docente'=>['label'=>'Docente','mods'=>['dashboard','ix-bolsa']]]),422,'ámbito','Roles page cannot give the Bolsa Laboral to teachers');
 foreach(PortalPolicy::definitions()['roles'] as $key=>$role)verify(!array_diff($role['mods'],IntranetScope::MODULES),'Role '.$key.' only lists intranet modules');
 $app->logout();
 refuses(fn()=>$app->submit('mensajes',[]),404,'alcance','Contact form of the old website disabled');

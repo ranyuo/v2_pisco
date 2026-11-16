@@ -47,8 +47,15 @@ verify($me['rol']==='egresado'&&$me['vin']==='est:70'&&empty($me['cambiarClave']
 verify(count($app->bootstrap()['data']['academico']['estudiantes'])===1,'Graduate sees only their own record');
 verify((bool)array_filter($mails('maria.egresada@example.test'),fn($m)=>str_contains($m['subject'],'está activa')),'Graduate is e-mailed that the account is active');
 $app->logout();
-refuses(fn()=>$app->registerGraduate($form()),422,'Ya existe una cuenta','A second registration with the same DNI is refused');$free();
-refuses(fn()=>$app->registerGraduate($form(['dni'=>'70000009'])),422,'correo ya está registrado','An e-mail already used by another account is refused');$free();
+// Privacidad: un DNI o correo con cuenta no se revela en pantalla; se explica por correo a la dirección ya registrada.
+$requests=fn()=>(int)$db->query('SELECT COUNT(*) FROM pisco_graduate_requests')->fetchColumn();$n=$requests();
+$again=$app->registerGraduate($form(['correo'=>'otro.intento@example.test']));$free();
+verify($again['ok']===true&&$requests()===$n,'A second registration with the same DNI looks the same but creates nothing');
+verify((bool)array_filter($mails('maria.egresada@example.test'),fn($m)=>str_contains($m['subject'],'Ya tienes una cuenta')),'The account owner is told by e-mail, not the screen');
+verify(!$mails('otro.intento@example.test'),'Nothing is sent to the address typed by the other person');
+$used=$app->registerGraduate($form(['dni'=>'70000009']));$free();
+verify($used['ok']===true&&$requests()===$n&&(bool)array_filter($mails('maria.egresada@example.test'),fn($m)=>str_contains($m['subject'],'ya pertenece')),'An e-mail already used by another account creates nothing and is explained by e-mail');
+refuses(fn()=>$app->registerGraduate($form(['dni'=>'70000008','password'=>str_repeat('ñ',40),'password_confirmation'=>str_repeat('ñ',40)])),422,'72 bytes','Passwords over 72 bytes are refused');$free();
 
 // B. Fuera del padrón: confirma su correo y queda en revisión; el personal aprueba y se avisa al egresado.
 $b=$form(['dni'=>'70000002','nom'=>'Ramos Peña Ana Lucía','correo'=>'ana.egresada@example.test','anio'=>2023]);
@@ -62,7 +69,8 @@ $app->resendGraduateCode(['dni'=>'70000002']);$free();
 $v=$app->verifyGraduate(['dni'=>'70000002','codigo'=>$code('ana.egresada@example.test')]);$free();
 verify($v['estado']==='Por validar','Graduate not in the register waits for staff review');
 verify((bool)array_filter($mails('ana.egresada@example.test'),fn($m)=>str_contains($m['subject'],'recibida')),'Graduate is e-mailed that the request is under review');
-refuses(fn()=>$app->registerGraduate($b),422,'en revisión','A second registration while under review is refused');$free();
+$n=$requests();$app->registerGraduate($b);$free();
+verify($requests()===$n&&(bool)array_filter($mails('ana.egresada@example.test'),fn($m)=>str_contains($m['subject'],'ya está en revisión')),'A second registration while under review creates nothing and is explained by e-mail');
 refuses(fn()=>$app->login(['username'=>'70000002','password'=>$pw]),422,'incorrectos','No account while under review');$free();
 refuses(fn()=>$app->graduateRequests(),403,'Inicia sesión','Visitors cannot list registration requests');
 $app->login(['username'=>'70000001','password'=>$pw]);refuses(fn()=>$app->graduateRequests(),403,'permiso','A graduate cannot list registration requests');$app->logout();
@@ -92,10 +100,28 @@ $app->registerGraduate($c);$free();verify(true,'After a rejection the person can
 
 // Sin confirmar el correo (p. ej. sin SMTP): el personal puede aprobar tras verificar la identidad en persona.
 $admin();$luis=array_values(array_filter($app->graduateRequests()['requests'],fn($x)=>$x['dni']==='70000003'&&$x['status']==='Por verificar'))[0];
-$app->decideGraduate(['id'=>$luis['id'],'accion'=>'aprobar']);
+refuses(fn()=>$app->decideGraduate(['id'=>$luis['id'],'accion'=>'aprobar']),422,'no está confirmado','An unconfirmed request is not approved without in-person verification');
+$app->decideGraduate(['id'=>$luis['id'],'accion'=>'aprobar','verificadoEnPersona'=>true]);
+verify((bool)$db->query("SELECT 1 FROM pisco_audit WHERE action='Aprobar registro de egresado' AND details LIKE '%en persona%'")->fetchColumn(),'In-person verification is recorded in the audit');
 $st=array_values(array_filter($app->bootstrap()['data']['academico']['estudiantes'],fn($e)=>$e['dni']==='70000003'))[0];
 verify($st['estado']==='Egresado'&&$st['id']===71,'Approving a regular student updates the same register entry to graduate');
+verify($st['correo']==='luis@example.test','The register e-mail is kept, not overwritten by the request');
+verify((bool)array_filter($mails('luis@example.test'),fn($m)=>str_contains($m['subject'],'Se creó una cuenta con tu DNI')),'The e-mail on record is told that an account was created');
 $queued=(int)$db->query("SELECT COUNT(*) FROM pisco_mail WHERE source_type='egresados' AND status='Pendiente'")->fetchColumn();
 verify($queued>0&&PortalNotifications::exists([],['source_type'=>'egresados','source_id'=>'1']),'Graduate e-mails stay queued for delivery');
+// Respuestas que no revelan nada y límites por DNI.
+$app->logout();
+refuses(fn()=>$app->verifyGraduate(['dni'=>'79999999','codigo'=>'123456']),422,'no es correcto o ya venció','Unknown DNI gets the same message as a wrong code');$free();
+$res=$app->resendGraduateCode(['dni'=>'79999999']);$free();verify($res['ok']===true&&!isset($res['correo']),'Resending reveals neither the request nor its e-mail');
+$free();$z=$form(['dni'=>'70000005','correo'=>'limite@example.test']);$app->registerGraduate($z);
+for($i=0;$i<4;$i++)$app->resendGraduateCode(['dni'=>'70000005']);
+verify(count(array_filter($mails('limite@example.test'),fn($m)=>str_contains($m['subject'],'Código')))===3,'At most three codes per DNI and hour');$free();
+// Un registro pendiente desde otro correo no se reemplaza mientras su código siga vigente.
+$app->registerGraduate($form(['dni'=>'70000005','correo'=>'intruso@example.test']));$free();
+verify((int)$db->query("SELECT COUNT(*) FROM pisco_graduate_requests WHERE dni='70000005' AND status='Por verificar' AND email='limite@example.test'")->fetchColumn()===1&&!$mails('intruso@example.test'),'Another e-mail cannot replace a pending registration with a valid code');
+// Aviso en la intranet también para Secretaría Académica.
+$admin();verify((bool)array_filter(json_decode($db->query('SELECT data FROM pisco_state WHERE id=1')->fetchColumn(),true)['academico']['notifs'],fn($n)=>$n['to']==='r:acad'&&str_contains($n['txt'],'registro de egresado')),'Academic office is notified in the intranet');
+// Un código que venció en la cola no se envía.
+verify(!PortalNotifications::exists([],['source_type'=>'egresados','event'=>'codigo','created_at'=>gmdate('Y-m-d H:i:s',time()-3600)])&&PortalNotifications::exists([],['source_type'=>'egresados','event'=>'aprobada','created_at'=>gmdate('Y-m-d H:i:s',time()-3600)]),'Expired code e-mails are cancelled, other notices are kept');
 $app->logout();
 echo "$passed total checks passed.\n";

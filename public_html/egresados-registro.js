@@ -59,14 +59,14 @@ function openRegistro(start){
     const msg=!/^\d{8}$/.test(v.dni)?'El DNI debe tener ocho dígitos.':!v.anio||+v.anio<1984||+v.anio>thisYear?'Indica tu año de egreso.':v.nom.length<5?'Escribe tus apellidos y nombres completos.':!v.prog?'Selecciona tu programa de estudios.':!/^\S+@\S+\.\S+$/.test(v.correo)?'Escribe un correo válido.':!/^9\d{8}$/.test(v.tel)?'El celular debe tener nueve dígitos y empezar con 9.':[...v.password].length<12?'La contraseña necesita al menos 12 caracteres.':v.password!==v.password_confirmation?'Las contraseñas no coinciden.':!v.declaration?'Debes aceptar la declaración y la política de privacidad.':'';
     if(msg){err.textContent=msg;return;}
     const b=f.querySelector('[type=submit]');b.disabled=true;
-    try{const r=await api('POST','/api/egresados/registro',{...v,prog:+v.prog,anio:+v.anio});FLOW={dni:v.dni,correo:r.correo,minutos:r.minutos||30};codeStep(false);}
+    try{const r=await api('POST','/api/egresados/registro',{...v,prog:+v.prog,anio:+v.anio});FLOW={dni:v.dni,correo:r.correo,minutos:r.minutos||30,correoActivo:r.correoActivo!==false};codeStep(false);}
     catch(e){err.textContent=e.message;b.disabled=false;}
    };
   });
 
  const codeStep=askDni=>show(`${steps(1)}<form data-egr-c novalidate>
   ${askDni||!FLOW.correo?`<p class="note" style="margin-top:0">Escribe tu DNI y el código que recibiste en tu correo.</p><div class="field"><label for="eg-dni2">DNI</label><input id="eg-dni2" name="dni" inputmode="numeric" maxlength="8" required value="${esc(FLOW.dni)}"></div>`
-   :`<p style="margin-top:0">Enviamos un código de 6 dígitos a <b>${esc(FLOW.correo)}</b>. Vence en ${FLOW.minutos} minutos. Revisa también tu carpeta de spam.</p><input type="hidden" name="dni" value="${esc(FLOW.dni)}">`}
+   :`<p style="margin-top:0">Si tus datos pueden registrarse, enviamos un código de 6 dígitos a <b>${esc(FLOW.correo)}</b>. Vence en ${FLOW.minutos} minutos; revisa también tu carpeta de spam. Si ya tienes una cuenta o una solicitud, te explicamos por correo qué hacer.</p>${FLOW.correoActivo===false?'<p class="notice warn">El envío de correos del instituto aún no está activo. Acércate a Secretaría Académica con tu DNI para que validen tu registro.</p>':''}<input type="hidden" name="dni" value="${esc(FLOW.dni)}">`}
   <div class="field"><label for="eg-code">Código de verificación</label><input id="eg-code" name="codigo" class="egr-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required></div>
   <p class="egr-err" role="alert" data-egr-err></p>
   <div class="egr-actions"><button class="btn" type="submit">${sic('check',16)} Confirmar correo</button><button type="button" class="btn ghost" data-egr-resend>Enviar un código nuevo</button><button type="button" class="btn ghost" data-egr-back>Corregir mis datos</button></div>
@@ -74,7 +74,7 @@ function openRegistro(start){
    const f=box.querySelector('[data-egr-c]'),err=box.querySelector('[data-egr-err]');
    box.querySelector('[data-egr-back]').onclick=formStep;
    box.querySelector('[data-egr-resend]').onclick=async()=>{err.textContent='';const dni=f.dni.value.trim();if(!/^\d{8}$/.test(dni)){err.textContent='Escribe tu DNI.';return;}
-    try{const r=await api('POST','/api/egresados/codigo',{dni});FLOW={...FLOW,dni,correo:r.correo};toast(`Enviamos un código nuevo a ${r.correo}.`,'ok');}catch(e){err.textContent=e.message;}};
+    try{const r=await api('POST','/api/egresados/codigo',{dni});FLOW={...FLOW,dni};toast(r.correoActivo===false?'El envío de correos del instituto aún no está activo. Acércate a Secretaría Académica.':'Si hay un registro pendiente con ese DNI, enviamos un código nuevo al correo registrado.',r.correoActivo===false?'err':'ok');}catch(e){err.textContent=e.message;}};
    f.onsubmit=async ev=>{ev.preventDefault();err.textContent='';const dni=f.dni.value.trim(),codigo=f.codigo.value.trim();
     if(!/^\d{8}$/.test(dni)){err.textContent='Escribe tu DNI.';return;}if(!/^\d{6}$/.test(codigo)){err.textContent='El código tiene seis dígitos.';return;}
     const b=f.querySelector('[type=submit]');b.disabled=true;
@@ -130,13 +130,29 @@ window.pzEgresadosPanel=function(head){
   document.querySelectorAll('[data-egr-f]').forEach(b=>b.onclick=()=>{FILTRO=b.dataset.egrF;route();});
   const done=msg=>{toast(msg,'ok');setTimeout(()=>location.reload(),900);};
   document.querySelectorAll('[data-egr-ok]').forEach(b=>b.onclick=async()=>{const r=rows.find(x=>x.id===+b.dataset.egrOk);if(!r)return;
-   const extra=r.status==='Por verificar'?' Su correo aún no está confirmado: apruébala solo si verificaste su identidad (por ejemplo, en persona con su DNI).':'';
-   if(!await confirmBox(`¿Aprobar el registro de ${r.name} (DNI ${r.dni})? Se activará su cuenta con la contraseña que creó y se le avisará a ${r.email}.${extra}`,{ok:'Aprobar',danger:false,title:'Aprobar registro'}))return;
+   const otherMail=r.padron&&r.padron.correo&&r.padron.correo.toLowerCase()!==String(r.email).toLowerCase();
+   if(r.status==='Por verificar'){
+    // Correo sin confirmar: solo con la identidad verificada en persona (queda en la auditoría).
+    const m=modal({title:'Aprobar sin correo confirmado',size:'sm',body:`<form data-egr-pf novalidate><p>${esc(r.name)} · DNI ${esc(r.dni)}</p><p class="notice warn">Esta persona no confirmó su correo (${esc(r.email)}). Apruébala solo si verificaste su identidad, por ejemplo con su DNI en Secretaría.</p><label class="check"><input type="checkbox" name="ok"> <span>Verifiqué la identidad de la persona en persona.</span></label><p class="egr-err" role="alert" data-egr-err></p><div class="egr-actions"><button class="btn" type="submit">Aprobar</button></div></form>`});
+    const f=m.el.querySelector('[data-egr-pf]');f.onsubmit=async ev=>{ev.preventDefault();if(!f.ok.checked){f.querySelector('[data-egr-err]').textContent='Marca la casilla para confirmar la verificación.';return;}
+     try{await api('POST','/api/egresados/solicitudes',{id:r.id,accion:'aprobar',verificadoEnPersona:true});m.close();done('Registro aprobado. Se avisó al egresado por correo.');}catch(e){f.querySelector('[data-egr-err]').textContent=e.message;}};
+    return;
+   }
+   if(!await confirmBox(`¿Aprobar el registro de ${r.name} (DNI ${r.dni})? Se activará su cuenta con la contraseña que creó y se le avisará a ${r.email}.${otherMail?` El padrón tiene otro correo (${r.padron.correo}): se conserva y también se le avisará.`:''}`,{ok:'Aprobar',danger:false,title:'Aprobar registro'}))return;
    try{await api('POST','/api/egresados/solicitudes',{id:r.id,accion:'aprobar'});done('Registro aprobado. Se avisó al egresado por correo.');}catch(e){toast(e.message,'err');}});
   document.querySelectorAll('[data-egr-no]').forEach(b=>b.onclick=()=>{const r=rows.find(x=>x.id===+b.dataset.egrNo);if(!r)return;
    const m=modal({title:'Rechazar registro',size:'sm',body:`<form data-egr-rf novalidate><p>${esc(r.name)} · DNI ${esc(r.dni)}</p><div class="field"><label for="egr-mot">Motivo (se enviará a ${esc(r.email)})</label><textarea id="egr-mot" rows="3" maxlength="300" required placeholder="Ej.: No figuras como egresado del programa indicado."></textarea></div><p class="egr-err" role="alert" data-egr-err></p><div class="egr-actions"><button class="btn" type="submit">Rechazar y avisar</button></div></form>`});
    const f=m.el.querySelector('[data-egr-rf]');f.onsubmit=async ev=>{ev.preventDefault();const motivo=f.querySelector('textarea').value.trim();if(motivo.length<5){f.querySelector('[data-egr-err]').textContent='Indica el motivo (al menos 5 caracteres).';return;}
     try{await api('POST','/api/egresados/solicitudes',{id:r.id,accion:'rechazar',motivo});m.close();done('Solicitud rechazada. Se avisó al egresado por correo.');}catch(e){f.querySelector('[data-egr-err]').textContent=e.message;}};});
  }};
+};
+
+/* Secretaría Académica y coordinación revisan las solicitudes desde el Maestro de alumnos: #/admin/ix-alumnos/registros. */
+const baseAlumnos=CUSTOM['ix-alumnos'];
+if(typeof baseAlumnos==='function')CUSTOM['ix-alumnos']=(parts,q)=>{
+ if(parts[2]==='registros'&&!isCommunity())return window.pzEgresadosPanel(admHead('Registro de egresados','Solicitudes de registro en línea de egresados','<a class="btn ghost" href="#/admin/ix-alumnos">Volver al maestro de alumnos</a>','users',[['Gestión académica'],['Maestro de alumnos','#/admin/ix-alumnos'],['Registro de egresados']]));
+ const out=baseAlumnos(parts,q);const res=typeof out==='string'?{html:out}:out;
+ if(!parts[2]&&!isCommunity()&&res&&typeof res.html==='string')return Object.assign({},res,{html:`<div class="notice" style="margin-bottom:14px">Los egresados pueden registrarse en línea desde la Bolsa Laboral. <a href="#/admin/ix-alumnos/registros">Revisar las solicitudes de registro →</a></div>`+res.html});
+ return res;
 };
 })();

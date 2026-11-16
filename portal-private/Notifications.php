@@ -111,7 +111,12 @@ final class PortalNotifications
     {
         $module=$mail['source_type']??'expedientes';$id=($mail['source_id']??'')?:($mail['record_id']??'');
         // Registro de egresados y recuperación de contraseñas: viven fuera del estado del portal (tablas propias).
-        if($module==='egresados'||$module==='cuentas')return true;
+        if($module==='egresados'||$module==='cuentas'){
+            // Un código que ya venció no se envía (por ejemplo, si el SMTP se configuró después).
+            $minutes=$module==='egresados'?30:15;
+            if(($mail['event']??'')==='codigo'&&!empty($mail['created_at'])&&strtotime((string)$mail['created_at'].' UTC')<time()-$minutes*60)return false;
+            return true;
+        }
         if(!in_array($module,['expedientes','reclamos','empresas','ofertas','postulaciones'],true))return false;
         $rows=in_array($module,['expedientes','reclamos'],true)?($data[$module]??[]):($data['academico'][$module]??[]);
         $row=PortalPolicy::find($rows,'id',$id);if($row===null||($row['deleted']??false))return false;
