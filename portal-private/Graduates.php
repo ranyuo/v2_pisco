@@ -12,11 +12,11 @@ declare(strict_types=1);
  */
 trait PortalGraduates
 {
-    private const GRAD_CODE_MINUTES=30;
-    private const GRAD_CODE_ATTEMPTS=5;
+    private static $GRAD_CODE_MINUTES=30;
+    private static $GRAD_CODE_ATTEMPTS=5;
     /** Códigos por DNI y por hora (registro y reenvíos juntos). */
-    private const GRAD_CODES_PER_HOUR=3;
-    private const GRAD_GENERIC='El código no es correcto o ya venció. Solicita uno nuevo.';
+    private static $GRAD_CODES_PER_HOUR=3;
+    private static $GRAD_GENERIC='El código no es correcto o ya venció. Solicita uno nuevo.';
 
     private static function maskEmail(string $email): string
     {
@@ -50,15 +50,15 @@ trait PortalGraduates
         $window=intdiv(time(),3600)*3600;$key=hash('sha256','graduate-code-dni|'.$dni.'|'.$window);
         $this->db()->prepare('INSERT INTO pisco_rate_limits (rate_key,hits,expires_at) VALUES (?,1,?) ON DUPLICATE KEY UPDATE hits=hits+1')->execute([$key,$window+3600]);
         $s=$this->db()->prepare('SELECT hits FROM pisco_rate_limits WHERE rate_key=?');$s->execute([$key]);
-        return (int)$s->fetchColumn()<=self::GRAD_CODES_PER_HOUR;
+        return (int)$s->fetchColumn()<=self::$GRAD_CODES_PER_HOUR;
     }
     private function sendGraduateCode(array $request,array $data): void
     {
         $code=(string)random_int(100000,999999);
-        $this->db()->prepare('UPDATE pisco_graduate_requests SET code_hash=?,code_expires=DATE_ADD(NOW(),INTERVAL '.self::GRAD_CODE_MINUTES.' MINUTE),code_attempts=0 WHERE id=?')
+        $this->db()->prepare('UPDATE pisco_graduate_requests SET code_hash=?,code_expires=DATE_ADD(NOW(),INTERVAL '.self::$GRAD_CODE_MINUTES.' MINUTE),code_attempts=0 WHERE id=?')
             ->execute([hash('sha256',$request['id'].'|'.$code),$request['id']]);
         $this->graduateMail($request,'codigo','Código de verificación: '.$code,
-            "Recibimos tu registro en la Bolsa Laboral.\n\nTu código de verificación es: $code\n\nEscríbelo en la página de registro para confirmar tu correo. Vence en ".self::GRAD_CODE_MINUTES." minutos.\nSi no solicitaste este registro, ignora este mensaje.",$data);
+            "Recibimos tu registro en la Bolsa Laboral.\n\nTu código de verificación es: $code\n\nEscríbelo en la página de registro para confirmar tu correo. Vence en ".self::$GRAD_CODE_MINUTES." minutos.\nSi no solicitaste este registro, ignora este mensaje.",$data);
     }
     /** Cuenta activa vinculada al alumno (por DNI de usuario o por vínculo est:id). */
     private function accountForStudent(string $dni,?int $studentId): ?array
@@ -117,7 +117,7 @@ trait PortalGraduates
             return ['s'=>(string)$request['id']];
         })['s'];
         $this->deliverGraduateMail($source);
-        return ['ok'=>true,'correo'=>self::maskEmail($r['correo']),'minutos'=>self::GRAD_CODE_MINUTES,'correoActivo'=>$this->mailReady()];
+        return ['ok'=>true,'correo'=>self::maskEmail($r['correo']),'minutos'=>self::$GRAD_CODE_MINUTES,'correoActivo'=>$this->mailReady()];
     }
 
     /** Reenvía el código. La respuesta no revela si existe un registro pendiente para ese DNI. */
@@ -145,7 +145,7 @@ trait PortalGraduates
         $result=$this->transaction(function()use($dni,$code){
             $db=$this->db();
             $stmt=$db->prepare("SELECT *,code_expires<NOW() AS expired FROM pisco_graduate_requests WHERE dni=? AND status='Por verificar' ORDER BY id DESC LIMIT 1 FOR UPDATE");$stmt->execute([$dni]);$request=$stmt->fetch();
-            if(!$request||!$request['code_hash']||(int)$request['code_attempts']>=self::GRAD_CODE_ATTEMPTS||(int)$request['expired'])return ['error'=>true];
+            if(!$request||!$request['code_hash']||(int)$request['code_attempts']>=self::$GRAD_CODE_ATTEMPTS||(int)$request['expired'])return ['error'=>true];
             if(!hash_equals($request['code_hash'],hash('sha256',$request['id'].'|'.trim($code)))){
                 $db->prepare('UPDATE pisco_graduate_requests SET code_attempts=code_attempts+1 WHERE id=?')->execute([$request['id']]);
                 return ['error'=>true];
@@ -168,7 +168,7 @@ trait PortalGraduates
                 "Un egresado solicitó su cuenta de la Bolsa Laboral.\nNombre: {$request['name']}\nRevisa la solicitud en la intranet: Bolsa laboral › Registro de egresados, o Maestro de alumnos › Registro de egresados.\n");
             return ['estado'=>'Por validar','id'=>(int)$request['id']];
         });
-        if(isset($result['error']))throw new PortalError(422,self::GRAD_GENERIC);
+        if(isset($result['error']))throw new PortalError(422,self::$GRAD_GENERIC);
         $this->deliverGraduateMail((string)$result['id']);
         return ['estado'=>$result['estado']];
     }

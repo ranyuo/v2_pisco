@@ -7,8 +7,8 @@ declare(strict_types=1);
  */
 trait PortalRecovery
 {
-    private const RESET_MINUTES=15;
-    private const RESET_ATTEMPTS=5;
+    private static $RESET_MINUTES=15;
+    private static $RESET_ATTEMPTS=5;
 
     /** Ofertas publicadas cuya fecha límite ya pasó (el día límite todavía admite postulaciones). */
     public static function expiredOffers(array $data): array
@@ -69,15 +69,15 @@ trait PortalRecovery
             if((int)$recent->fetchColumn()>=3)return ['id'=>0];
             $db->prepare('UPDATE pisco_password_resets SET used_at=NOW() WHERE user_id=? AND used_at IS NULL')->execute([$user['id']]);
             $code=(string)random_int(100000,999999);
-            $db->prepare('INSERT INTO pisco_password_resets (user_id,code_hash,expires_at) VALUES (?,?,DATE_ADD(NOW(),INTERVAL '.self::RESET_MINUTES.' MINUTE))')->execute([$user['id'],'']);
+            $db->prepare('INSERT INTO pisco_password_resets (user_id,code_hash,expires_at) VALUES (?,?,DATE_ADD(NOW(),INTERVAL '.self::$RESET_MINUTES.' MINUTE))')->execute([$user['id'],'']);
             $id=(int)$db->lastInsertId();$db->prepare('UPDATE pisco_password_resets SET code_hash=? WHERE id=?')->execute([hash('sha256',$id.'|'.$code),$id]);
             $this->resetMail($user,'codigo','Código para restablecer tu contraseña: '.$code,
-                "Recibimos una solicitud para restablecer la contraseña de tu cuenta (usuario: {$user['username']}).\n\nTu código es: $code\n\nEscríbelo en la página de ingreso, en «¿Olvidaste tu contraseña?». Vence en ".self::RESET_MINUTES." minutos.\nSi no lo solicitaste, ignora este mensaje: tu contraseña no cambiará.");
+                "Recibimos una solicitud para restablecer la contraseña de tu cuenta (usuario: {$user['username']}).\n\nTu código es: $code\n\nEscríbelo en la página de ingreso, en «¿Olvidaste tu contraseña?». Vence en ".self::$RESET_MINUTES." minutos.\nSi no lo solicitaste, ignora este mensaje: tu contraseña no cambiará.");
             PortalAudit::write($this,'Solicitar restablecimiento de contraseña','Cuentas',(string)$user['id'],[],['usuario'=>'visitante','rol'=>'publico']);
             return ['id'=>(int)$user['id']];
         })['id'];
         if($sent)portal_defer(fn()=>$this->processMail(3,hash('sha256','cuentas|'.$sent)));
-        return ['ok'=>true,'minutos'=>self::RESET_MINUTES,'correoActivo'=>$this->mailReady()];
+        return ['ok'=>true,'minutos'=>self::$RESET_MINUTES,'correoActivo'=>$this->mailReady()];
     }
 
     /** Paso 2: código y nueva contraseña. Cierra las sesiones abiertas y desbloquea la cuenta. */
@@ -94,7 +94,7 @@ trait PortalRecovery
             $stmt=$db->prepare('SELECT * FROM pisco_users WHERE username=? AND active=1 FOR UPDATE');$stmt->execute([$username]);$user=$stmt->fetch();
             if(!$user)return ['error'=>$generic];
             $r=$db->prepare('SELECT *,expires_at<NOW() AS expired FROM pisco_password_resets WHERE user_id=? AND used_at IS NULL ORDER BY id DESC LIMIT 1 FOR UPDATE');$r->execute([$user['id']]);$reset=$r->fetch();
-            if(!$reset||(int)$reset['expired']||(int)$reset['attempts']>=self::RESET_ATTEMPTS)return ['error'=>$generic];
+            if(!$reset||(int)$reset['expired']||(int)$reset['attempts']>=self::$RESET_ATTEMPTS)return ['error'=>$generic];
             // Mismo mensaje en todos los casos: no revela si la cuenta existe ni si tiene un código pendiente.
             if(!hash_equals($reset['code_hash'],hash('sha256',$reset['id'].'|'.$code))){
                 $db->prepare('UPDATE pisco_password_resets SET attempts=attempts+1 WHERE id=?')->execute([$reset['id']]);
