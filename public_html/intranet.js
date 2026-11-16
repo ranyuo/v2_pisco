@@ -104,3 +104,24 @@ if(SPECS.usuarios){const intranetUserFields=SPECS.usuarios.fields;
  SPECS.usuarios.fields=function(work){const fields=typeof intranetUserFields==='function'?intranetUserFields(work):intranetUserFields;for(const f of fields)if(f.n==='rol'&&Array.isArray(f.opts))f.opts=f.opts.filter(([r])=>!['imagen','transparencia'].includes(r));return fields;};}
 nosotrosSide=function(){return `<div class="side-box"><div class="pad"><h2 style="font-size:16px">Servicios en línea</h2><nav class="intra-directory-nav" aria-label="Servicios">${serviceLinks()}</nav></div></div>`;};
 sidePromo=function(){return '';};
+
+/* Usuarios y roles: «Vinculado a» es obligatorio para Estudiante, Egresado, Docente y Empresa (el servidor lo exige).
+   Se marca con asterisco al elegir el rol, se explica qué elegir y la lista muestra solo las opciones de ese tipo. */
+const VIN_RULES={estudiante:['est:','Obligatorio: elige al estudiante del padrón. Si no figura, regístralo primero en Gestión académica › Maestro de alumnos (desde ahí también puedes crear su acceso).'],
+ egresado:['est:','Obligatorio: elige al egresado del padrón. Si no figura, regístralo en Maestro de alumnos, o pídele que se registre en línea desde la Bolsa Laboral (crea su propia contraseña).'],
+ docente:['doc:','Obligatorio: elige al docente de la carga docente (Configuración académica general).'],
+ empresa:['emp:','Obligatorio: elige la empresa registrada en la Bolsa Laboral.']};
+function syncVinField(){
+ const rol=document.getElementById('f_rol'),vin=document.getElementById('f_vin');if(!rol||!vin)return;
+ const field=vin.closest('.field');const label=field&&field.querySelector('label');const rule=VIN_RULES[rol.value];
+ if(label){label.querySelector('.req')?.remove();if(rule)label.insertAdjacentHTML('beforeend',' <span class="req">*</span>');}
+ vin.required=!!rule;
+ for(const o of vin.options){if(!o.value)continue;const show=!rule||o.value.startsWith(rule[0]);o.hidden=!show;o.disabled=!show;}
+ if(rule&&vin.value&&!vin.value.startsWith(rule[0]))vin.value='';
+ let hint=field&&field.querySelector('[data-vin-hint]');
+ if(field&&!hint){hint=document.createElement('small');hint.dataset.vinHint='1';hint.className='hint';field.appendChild(hint);}
+ if(hint){hint.textContent=rule?rule[1]:'Opcional para el personal del instituto.';hint.style.color=rule?'var(--warn,#8a5a00)':'';}
+}
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='f_rol')syncVinField();});
+const intranetRouteVin=route;
+route=function(){intranetRouteVin();if(location.hash.startsWith('#/admin/usuarios'))setTimeout(syncVinField,0);};
