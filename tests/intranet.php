@@ -18,6 +18,12 @@ refuses(fn()=>$change(function(&$d){$d['config']['home']=['cifras'=>[]];}),403,'
 refuses(fn()=>$change(function(&$d){$d['config']['diseno']='moderno';}),403,'web institucional','Server rejects website design settings');
 $change(function(&$d){$d['config']['inst']['telefono']='056 000000';});
 verify($app->bootstrap()['data']['config']['inst']['telefono']==='056 000000','Institution data is still editable');
+$themes=$app->bootstrap()['data']['config']['temas']??[];verify(count($themes)>1,'Intranet themes are available to the administrator');
+$other=array_values(array_diff(array_keys($themes),[$app->bootstrap()['data']['config']['tema']??'']))[0];
+$change(function(&$d)use($other){$d['config']['tema']=$other;});
+verify($app->bootstrap()['data']['config']['tema']===$other,'Administrator can switch the intranet colour theme');
+refuses(fn()=>$change(function(&$d){$d['config']['temas']['roto']=['label'=>'X','navy'=>'azul','navy2'=>'#000000','blue'=>'#000000','gold'=>'#000000'];}),422,'#RRGGBB','Invalid theme colours are rejected');
+verify(PortalPolicy::can(['rol'=>'admin'],'temas')&&in_array('temas',IntranetScope::MODULES,true),'Temas y apariencia is an intranet module');
 refuses(fn()=>PortalPolicy::validateRoles(['secretaria'=>['label'=>'Secretaría','mods'=>['dashboard','noticias']]]),422,'ámbito','Roles cannot enable modules outside the intranet');
 verify(!PortalPolicy::can(['rol'=>'admin'],'noticias')&&PortalPolicy::can(['rol'=>'admin'],'ix-bolsa'),'Even the administrator only has intranet modules');
 verify(!in_array('ix-bolsa',PortalPolicy::defaults()['roles']['docente']['mods'],true),'The teacher role no longer offers the Bolsa Laboral module');

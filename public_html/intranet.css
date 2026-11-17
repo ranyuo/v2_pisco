@@ -1,21 +1,21 @@
 /* Intranet por módulos (mismo enfoque que v2_palpa), con los colores de Pisco: azul marino y dorado. */
-:root{--intra-navy:#0b1d3f;--intra-accent:#8a6400;--intra-line:#e3e7ef}
+:root{--intra-navy:var(--navy,#0b1d3f);--intra-accent:#8a6400;--intra-line:#e3e7ef}
 .intra-brand{display:flex;align-items:center;gap:14px;color:inherit;text-decoration:none;min-width:0}
-.intra-brand img{width:104px;height:58px;object-fit:contain;background:#0b1d3f;border-radius:8px;padding:8px}
+.intra-brand img{width:104px;height:58px;object-fit:contain;background:var(--intra-navy);border-radius:8px;padding:8px}
 .intra-brand strong,.intra-brand small{display:block}
 .intra-brand strong{font:700 17px var(--fh,system-ui)}
 .intra-brand small{font-size:12px;opacity:.75;margin-top:4px}
 .intra-login{min-height:100vh;padding:0;display:block;background:#f7f8fc}
 .intra-login-grid{min-height:100vh}
-.intra-login-story{padding:clamp(28px,5vw,80px);color:white;background:radial-gradient(ellipse at bottom left,#1d4a8f 0,transparent 55%),#0b1d3f;display:flex;flex-direction:column;justify-content:space-between;gap:64px}
+.intra-login-story{padding:clamp(28px,5vw,80px);color:white;background:radial-gradient(ellipse at bottom left,var(--blue,#1d4a8f) 0,transparent 55%),var(--intra-navy);display:flex;flex-direction:column;justify-content:space-between;gap:64px}
 .intra-login-story h1{font-size:clamp(36px,4vw,60px);line-height:1.12;letter-spacing:-2px;color:white;margin:18px 0 24px}
 .intra-login-story p{font-size:17px;color:#d7deef;max-width:480px;line-height:1.7}
 .intra-login-story ul{list-style:none;padding:0;margin:30px 0 0}
 .intra-login-story li{padding:15px 0;border-bottom:1px solid #ffffff21;font-size:14px}
-.intra-login-story li:before{content:'✓';color:#f2b705;margin-right:12px}
+.intra-login-story li:before{content:'✓';color:var(--gold,#f2b705);margin-right:12px}
 .intra-login-story>a{color:#d7deef;font-size:13px}
 .intra-eyebrow{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.6px;color:var(--intra-accent)}
-.intra-login-story .intra-eyebrow{color:#f2b705}
+.intra-login-story .intra-eyebrow{color:var(--gold,#f2b705)}
 .intra-login-access{display:flex;align-items:center;justify-content:center;padding:48px 32px}
 .intra-login-box{width:100%;max-width:410px}
 .intra-login-box h2{font-size:30px;margin:10px 0}
@@ -37,7 +37,7 @@
 .intra-public-header{background:white;border-bottom:1px solid var(--intra-line)}
 .intra-public-header>.wrap{display:flex;align-items:center;justify-content:space-between;gap:24px;padding-top:16px;padding-bottom:16px}
 .intra-public-header nav{display:flex;align-items:center;gap:20px;font-size:13px}
-.intra-footer{background:#0b1d3f;color:#d7deef;padding:24px 0;margin-top:48px;font-size:12px}
+.intra-footer{background:var(--intra-navy);color:#d7deef;padding:24px 0;margin-top:48px;font-size:12px}
 .intra-footer>.wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .intra-footer nav{display:flex;gap:20px}
 .intra-footer a{color:inherit}
@@ -71,3 +71,22 @@
 .intra-module-open a{position:relative;z-index:1;color:inherit;text-decoration:none}.intra-module-open .intra-module-page{margin-left:12px;font-weight:600;opacity:.8;text-decoration:underline}
 /* Directorio docente dentro de /cv-docente.php: ocupa todo el ancho (sin la columna lateral de la web). */
 .mod-directorio .layout{display:block;padding:0}.mod-directorio .layout>.content{max-width:none;width:100%}
+
+/* Temas y apariencia de la intranet: vista previa del panel con la combinación elegida */
+.itm-mock{display:grid;grid-template-columns:28% 1fr;grid-template-rows:auto 1fr;height:150px;border-radius:10px;overflow:hidden;border:1px solid var(--line,#dfe5ee);background:var(--bg,#f4f7fb);font-size:9px;color:var(--ink,#1b2433)}
+.itm-mock.big{height:250px;font-size:11px}
+.itm-side{grid-row:1/3;background:var(--navy);padding:10px 8px;display:flex;flex-direction:column;gap:6px}
+.itm-side b{color:#fff;font-family:var(--fh);font-size:1.05em;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.itm-side u{display:block;height:7px;border-radius:4px;background:rgba(255,255,255,.22);text-decoration:none}
+.itm-side u.on{background:var(--gold)}
+.itm-top{background:var(--navy2,var(--navy));height:22px;display:flex;align-items:center;justify-content:flex-end;padding:0 8px}
+.itm-top i{width:44px;height:9px;border-radius:5px;background:rgba(255,255,255,.3)}
+.itm-main{padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.itm-main h4{margin:0;font-family:var(--fh);font-size:1.25em;color:var(--hc,var(--navy))}
+.itm-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.itm-card{background:var(--card,#fff);border:1px solid var(--line,#dfe5ee);border-radius:var(--r,8px);padding:6px;min-width:0}
+.itm-card b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.itm-card em{display:block;margin-top:4px;color:var(--link);font-style:normal;font-weight:700}
+.itm-btns{display:flex;gap:6px;flex-wrap:wrap}
+.itm-btns span{padding:3px 8px;border-radius:var(--r,6px);font-weight:700}
+.itm-b1{background:var(--blue);color:#fff}.itm-b2{background:var(--gold);color:#1b1b1b}.itm-badge{background:var(--sky);color:var(--link)}

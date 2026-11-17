@@ -11,10 +11,10 @@ final class IntranetScope
 {
     /** Módulos de la intranet: siete funcionales (Horarios, Certificación modular, Grados y títulos, Mesa de partes,
      *  Libro de reclamaciones, Bolsa laboral y CV docente), catálogos de soporte y herramientas de administración. */
-    public const MODULES = ['dashboard','perfil','programas','docentes','cvdocente','ix-alumnos','ix-horarios','ix-certificados','ix-titulos','ix-bolsa','ix-config','certificados','reclamos','expedientes','config','usuarios','auditoria','respaldo'];
+    public const MODULES = ['dashboard','perfil','programas','docentes','cvdocente','ix-alumnos','ix-horarios','ix-certificados','ix-titulos','ix-bolsa','ix-config','certificados','reclamos','expedientes','config','usuarios','auditoria','respaldo','temas'];
     private const EDITORIAL = ['slides','enlaces','reconocimientos','jerarquica','egresados','categoriasNoticia','noticias','eventos','tiposDocumento','documentos','tupa','tupaDocs','estadisticas','licenciamiento','inversiones','convocatorias','admisiones','matriculas','tiposBeca','becasPeriodos','becarios','locales','servicios','mensajes','suscriptores'];
     /** Ajustes de configuración que siguen administrándose desde la intranet. */
-    private const SETTINGS = ['inst','mpv','lr','bolsa','limites','contadores','correoReclamos','enlacesV2'];
+    private const SETTINGS = ['temas','tema','inst','mpv','lr','bolsa','limites','contadores','correoReclamos','enlacesV2'];
     /** Colecciones que los módulos de la intranet pueden modificar. */
     private const WRITABLE = ['programas','personas','academico','reclamos','expedientes','certificados','config','usuarios','auditoria','visitas','correos','__v'];
 
