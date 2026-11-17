@@ -74,7 +74,7 @@ La base de datos se actualiza sola la primera vez que se abre el sitio con la ve
 
 ### Web institucional
 
-La apariencia del portal, el carrusel de programas, las noticias y demás contenidos de la web institucional ya no se administran desde esta aplicación (enfoque de intranet, como Palpa). Sus datos anteriores siguen en la base por si se necesitan.
+La estructura de la página pública, el carrusel de programas, las noticias y demás contenidos de la web institucional ya no se administran desde esta aplicación (enfoque de intranet, como Palpa). Sus datos anteriores siguen en la base por si se necesitan.
 
 ### Recuperación de contraseña por correo
 
@@ -96,7 +96,7 @@ El código es el mismo para todos los institutos; lo propio de cada uno está en
 2. **Base de datos propia** y `config.php` propio, con una `install_key` nueva (no copies `portal-private/` de otro sitio: la configuración SMTP guardada está cifrada con esa clave e incluye la cuenta del otro instituto). Opcionalmente, la ruta del archivo de configuración se puede indicar con la variable de entorno `PORTAL_CONFIG_FILE`.
 3. Instala como se indica arriba y completa en la intranet:
    - *Configuración*: nombre, nombre corto, sigla del logo, logo, dirección, **distrito y región** (se usan en el pie de la intranet, en los títulos emitidos y en los datos para buscadores), teléfono, correo, redes, SEO y WhatsApp.
-   - *Apariencia del portal*: estructura, colores y letras.
+   - *Temas y apariencia*: colores, letras y redondeo de la intranet (panel, ingreso y páginas de servicios). La estructura de la página pública se administra en la web institucional.
    - *Enlaces y servicios*: DRE o GRE de la región (el pie muestra el nombre del enlace `dre`), plataforma virtual, correo y biblioteca.
    - *Mesa de partes*: prefijo de numeración, correo, teléfono, áreas y feriados regionales. Los feriados nacionales del Perú (incluida Semana Santa) se aplican solos cada año.
    - *Libro de reclamaciones*, *Bolsa laboral* y el correo notificador (SMTP).

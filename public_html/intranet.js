@@ -12,7 +12,7 @@ NAV_GROUPS.splice(0,NAV_GROUPS.length,
  ['Gestión administrativa',[['expedientes','inbox'],['reclamos','book'],['ix-bolsa','briefcase']]],
  ['Perfiles profesionales',[['cvdocente','user']]],
  ['Catálogos de soporte',[['programas','grad'],['ix-alumnos','users'],['docentes','users'],['ix-config','gear']]],
- ['Administración y seguridad',[['config','gear'],['usuarios','key'],['auditoria','history'],['respaldo','database']]]);
+ ['Administración y seguridad',[['config','gear'],['temas','palette'],['usuarios','key'],['auditoria','history'],['respaldo','database']]]);
 // Cada servicio abre su página independiente (sin el menú de la intranet).
 const INTRANET_SERVICES=[
  ['/mesa-de-partes.php','Mesa de partes','Presenta documentos y consulta el estado de tu expediente.','inbox'],
@@ -125,3 +125,24 @@ function syncVinField(){
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='f_rol')syncVinField();});
 const intranetRouteVin=route;
 route=function(){intranetRouteVin();if(location.hash.startsWith('#/admin/usuarios'))setTimeout(syncVinField,0);};
+
+/* ---------- Temas y apariencia de la intranet (como Palpa) ----------
+   Solo los colores, las letras y el redondeo del panel. La estructura de la página pública se administra en la web institucional. */
+MODULES.temas='Temas y apariencia';
+disenoPanel=function(){return '';};
+themeMock=function(t,big=false){
+ const mods=big?['Horarios','Bolsa laboral','Mesa de partes']:['Horarios','Bolsa','Trámites'];
+ return `<div class="itm-mock${big?' big':''}" style="${esc(themeScope(t))}" aria-hidden="true"><div class="itm-side"><b>${esc(instShort())}</b><u class="on"></u><u></u><u></u><u></u>${big?'<u></u><u></u>':''}</div><div class="itm-top"><i></i></div><div class="itm-main"><h4>Mi panel</h4><div class="itm-cards">${mods.map(m=>`<div class="itm-card"><b>${esc(m)}</b>${big?'<em>Abrir módulo</em>':''}</div>`).join('')}</div>${big?'<div class="itm-btns"><span class="itm-b1">Botón principal</span><span class="itm-b2">Dorado</span><span class="itm-badge">Etiqueta</span></div>':''}</div></div>`;
+};
+const intranetTemas=CUSTOM.temas;
+CUSTOM.temas=function(parts){
+ const out=intranetTemas(parts);if(!out||typeof out.html!=='string')return out;
+ if(parts[2]){out.html=out.html.replaceAll('Apariencia del portal','Apariencia de la intranet').replaceAll('en todo el portal','en toda la intranet');return out;}
+ out.html=out.html.replaceAll('Apariencia del portal','Apariencia de la intranet').replace(' Se aplican a cualquier estructura.',' Se aplican a toda la intranet.').replace(/Elija la estructura y los colores del sitio público\.[^<']*/,'Elija los colores y las letras de la intranet. Se aplican al ingreso, al panel y a las páginas de servicios; la web institucional tiene su propia apariencia.')
+  .replace(/<section class="panel ap-step"><details class="pb ap-adv"[\s\S]*$/,'').replace('<span class="ap-n">2</span> Colores y letras','<span class="ap-n">1</span> Colores y letras');
+ return out;
+};
+const intranetApplyTheme=applyTheme;
+applyTheme=function(){intranetApplyTheme();delete document.documentElement.dataset.layout;};
+const intranetToast=toast;
+toast=function(msg,...rest){return intranetToast(typeof msg==='string'?msg.replace('en todo el portal','en toda la intranet'):msg,...rest);};
